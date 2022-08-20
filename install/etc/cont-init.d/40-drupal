@@ -1,0 +1,22 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+prepare_service
+
+PROCESS_NAME="drupal"
+check_service_initialized init 20-php-fpm
+
+## DRUPAL8_WEB_DIR depreacated.
+if [ ! -z "$DRUPAL8_WEB_DIR" ]; then
+  DRUPAL8_WEB_DIR=${DRUPAL8_WEB_DIR:=web}
+  sed -i "s/root \/var\/www\/html;/root \/var\/www\/html\/$DRUPAL8_WEB_DIR;/g" /etc/nginx/sites.enabled/drupal.conf
+fi
+if [ ! -z "$DRUPAL_WEB_ROOT" ]; then
+  DRUPAL_WEB_DIR=${DRUPAL_WEB_ROOT:=web}
+  sed -i "s/root \/var\/www\/html;/root \/var\/www\/html\/$DRUPAL_WEB_ROOT;/g" /etc/nginx/sites.enabled/drupal.conf
+fi
+sed -i "s/access_log  \/dev\/stdout main;//g" /etc/nginx/sites.enabled/drupal.conf
+sed -i "s/unix:\/run\/php-fpm\.sock/127.0.0.1:9000/g" /etc/nginx/sites.enabled/drupal.conf
+sed -i "s/add_header Content-Security-Policy \"default-src 'self';\";/add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";/g" /etc/nginx/sites.enabled/*.conf
+
+liftoff

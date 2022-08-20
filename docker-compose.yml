@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  nginx-php-fpm-app:
+    #image: tiredofit/nginx-php-fpm:alpine-7.4
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: nginx-php-fpm-app
+    labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:nginx-php-fpm.example.com
+      - traefik.port=80
+      - traefik.protocol=http
+      - traefik.docker.network=proxy
+      - traefik.backend=nginx-php-fpm-app
+    volumes:
+      - ~/www/commerce-demo:/var/www/html
+      - ./logs/:/www/logs
+    environment:
+      - VIRTUAL_HOST=yanfeng1.docker
+      - DRUPAL_WEB_ROOT=web
+      - CONTAINER_NAME=nginx-php-fpm-app-app
+      - PHP_MEMORY_LIMIT=2024M
+      - CRON_HELLO=* * * * * echo "hello" > /tmp/hello.log
+      - CRON_DRUSHCR=* * * * * drush -r /var/www/html cr > /tmp/drush.log
+    ports:
+      - 8080:80
+    networks:
+      - proxy
+    restart: always
+
+networks:
+  proxy:
+    external: true
+
