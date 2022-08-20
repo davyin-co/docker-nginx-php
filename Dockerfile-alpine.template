@@ -7,18 +7,16 @@ ENV DRUSH_VERSION 8.4.11
 ENV DRUSH_LAUCHER 0.10.1
 ENV COLUMNS 0
 ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
-ENV PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
-ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
-RUN apk add --no-cache --virtual tzdata bash php%%ALPINE_PHP_VERSION%%-pecl-memcached php%%ALPINE_PHP_VERSION%%-pecl-redis php%%ALPINE_PHP_VERSION%%-pecl-imagick && \
-    php-ext enable igbinary && \
-    php-ext enable memcached && \
-    php-ext enable redis && \
-    php-ext enable imagick && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    ###### install drush ######
-    curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+ENV PHP_ENABLE_IMAGICK=TRUE
+ENV PHP_ENABLE_REDIS=TRUE
+ENV PHP_ENABLE_MEMCACHED=TRUE
+ENV PHP_FPM_MAX_CHILDREN=300
+ENV PHP_FPM_START_SERVERS=10
+ENV PHP_FPM_MIN_SPARE_SERVERS=5
+ENV PHP_FPM_MAX_SPARE_SERVERS=30
+RUN curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
     chmod +x /usr/local/bin/drush8 && \
     drush8 core-status && \
     ###### install drush laucher ######
@@ -31,6 +29,7 @@ RUN apk add --no-cache --virtual tzdata bash php%%ALPINE_PHP_VERSION%%-pecl-memc
     php -r "unlink('composer-setup.php');" && \
     mv composer.phar /usr/local/bin/composer
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
+ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
 WORKDIR /var/www/html
 EXPOSE 80
