@@ -1,4 +1,6 @@
 #!/command/with-contenv bash
+source /assets/functions/00-container
+prepare_service
 
 export PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
 echo "export PS1='$PS1'" >> /root/.bashrc
