@@ -69,6 +69,7 @@ if [ ! -z "$PHP_FPM_PM" ]; then
   case $PHP_FPM_PM in
     ondemand)
       #sed -i -E "s/;?pm.process_idle_timeout = .*/pm.process_idle_timeout = ${PHP_FPM_PM_PROCESS_IDLE_TIMEOUT}s/g" /usr/local/etc/php-fpm.d/www.conf;;
+      ;;
     dynamic)
       #sed -i \
       #  -E "s/pm.start_servers = \d+/pm.start_servers = ${PHP_FPM_PM_START_SERVERS}/g;
@@ -78,6 +79,7 @@ if [ ! -z "$PHP_FPM_PM" ]; then
       PHP_FPM_START_SERVERS=$PHP_FPM_PM_START_SERVERS
       PHP_FPM_MIN_SPARE_SERVERS=$PHP_FPM_PM_MIN_SPARE_SERVERS
       PHP_FPM_MAX_SPARE_SERVERS=$PHP_FPM_PM_MAX_SPARE_SERVERS
+      ;;
   esac
 fi
 
