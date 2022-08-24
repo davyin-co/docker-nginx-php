@@ -6,24 +6,31 @@ prepare_service
 PROCESS_NAME="drupal"
 check_service_initialized init 20-php-fpm
 
+## disable php version expose
+sed -i "s#expose_php = On#expose_php = Off#g" /etc/php*/php.ini
+
+## disable php display_errors by default.
+## to enable it, PHP_DISPLAY_ERRORS = TRUE
+sed -i "s#php_flag\[display_errors\] = on#php_flag\[display_errors\] = off#g" /etc/php*/php-fpm.conf
+
 ## DRUPAL8_WEB_DIR depreacated.
 if [ ! -z "$DRUPAL8_WEB_DIR" ]; then
   DRUPAL8_WEB_DIR=${DRUPAL8_WEB_DIR:=web}
-  sed -i "s/root \/var\/www\/html;/root \/var\/www\/html\/$DRUPAL8_WEB_DIR;/g" /etc/nginx/sites.enabled/drupal.conf
+  sed -i "s#root \/var\/www\/html;#root \/var\/www\/html\/$DRUPAL8_WEB_DIR;#g" /etc/nginx/sites.enabled/drupal.conf
 fi
 if [ ! -z "$DRUPAL_WEB_ROOT" ]; then
   DRUPAL_WEB_DIR=${DRUPAL_WEB_ROOT:=web}
-  sed -i "s/root \/var\/www\/html;/root \/var\/www\/html\/$DRUPAL_WEB_ROOT;/g" /etc/nginx/sites.enabled/drupal.conf
+  sed -i "s#root \/var\/www\/html;#root \/var\/www\/html\/$DRUPAL_WEB_ROOT;#g" /etc/nginx/sites.enabled/drupal.conf
 fi
-sed -i "s/access_log  \/dev\/stdout main;//g" /etc/nginx/sites.enabled/drupal.conf
-sed -i "s/unix:\/run\/php-fpm\.sock/127.0.0.1:9000/g" /etc/nginx/sites.enabled/drupal.conf
+sed -i "s#access_log  \/dev\/stdout main;##g" /etc/nginx/sites.enabled/drupal.conf
+sed -i "s#unix:\/run\/php-fpm\.sock#127.0.0.1:9000#g" /etc/nginx/sites.enabled/drupal.conf
 
 
 HTTP_HEADER_X_FRAME_OPTIONS=${HTTP_HEADER_X_FRAME_OPTIONS:="SAMEORIGIN"};
-sed -i "s/add_header X-Frame-Options SAMEORIGIN;/add_header X-Frame-Options $HTTP_HEADER_X_FRAME_OPTIONS;/g" /etc/nginx/sites.enabled/*.conf
+sed -i "s#add_header X-Frame-Options SAMEORIGIN;#add_header X-Frame-Options $HTTP_HEADER_X_FRAME_OPTIONS;#g" /etc/nginx/sites.enabled/*.conf
 
 HTTP_HEADER_X_CONTENT_SECURITY_POLICY=${HTTP_HEADER_X_CONTENT_SECURITY_POLICY:="default-src 'self';"};
-sed -i "s/add_header Content-Security-Policy \"default-src 'self';\";/add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";/g" /etc/nginx/sites.enabled/*.conf
+sed -i "s#add_header Content-Security-Policy \"default-src 'self';\";#add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";#g" /etc/nginx/sites.enabled/*.conf
 
 # https://www.php.net/manual/en/ini.core.php#ini.variables-order
 #sed -i "s/variables_order = \"GPCS\"/variables_order = \"EGPCS\"/g" /usr/local/etc/php/php.ini
@@ -33,7 +40,7 @@ sed -i "s/add_header Content-Security-Policy \"default-src 'self';\";/add_header
 ## DRUPAL_SUBDIR support.
 if [ ! -z "$DRUPAL_SUBDIR" ]; then
   DRUPAL_SUBDIR=${DRUPAL_SUBDIR:=fake-subdir-placeholder}
-  sed -i "s/fake-subdir-placeholder/$DRUPAL_SUBDIR/g" /etc/nginx/sites.enabled/drupal.conf
+  sed -i "s#fake-subdir-placeholder#$DRUPAL_SUBDIR#g" /etc/nginx/sites.enabled/drupal.conf
 fi
 
 if [ ! -z "$PHP_MEM_LIMIT" ]; then
