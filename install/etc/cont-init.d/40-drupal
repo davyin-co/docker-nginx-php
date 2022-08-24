@@ -16,6 +16,10 @@ sed -i "s#php_flag\[display_errors\] = on#php_flag\[display_errors\] = off#g" /e
 ## set opcache invalidate freq 60 => 2
 sed -i "s#opcache.revalidate_freq=60#opcache.revalidate_freq=2#g" /etc/php*/conf.d/00-opcache.ini
 
+## set clear_env = no, so that the php-fpm will know env from container
+# https://serverfault.com/questions/813368/configure-php-fpm-to-access-environment-variables-in-docker
+sed -i -e '$a\clear_env = no' /etc/php*/php-fpm.conf
+
 ## DRUPAL8_WEB_DIR depreacated.
 if [ ! -z "$DRUPAL8_WEB_DIR" ]; then
   DRUPAL8_WEB_DIR=${DRUPAL8_WEB_DIR:=web}
