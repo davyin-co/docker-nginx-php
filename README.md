@@ -25,19 +25,22 @@ see [docker-compose.yml](https://github.com/sparkpos/docker-nginx-php/blob/maste
 |HTTP_HEADER_X_FRAME_OPTIONS|X-Frame-Options, default value: SAMEORIGIN; see [here](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/X-Frame-Options)|
 |HTTP_HEADER_X_CONTENT_SECURITY_POLICY|Content-Security-Policy, default value: "default-src 'self';";see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)|
 |MAX_FILE_UPLOAD_SIZE|Modify the upload file size, this will change both the nginx & php config. default value: 32M|
+|LOGROTATE_RETAIN_DAYS|days to keep the logs,such nginx/php-fpm etc|30|
+|CRON_*| Name of the job value of the time and output to be run |`0 2 * * * drush -r /var/www/html cron`|
 
 #### php & php-fpm
-|Name|Desciption|
-|----|----------|
-|PHP_MEM_LIMIT|The php memory limit in php.ini. default value is 128M.|
-|PHP_FPM_PM|modify the php-fpm processing type, allowed values: static, ondemand, dynamic|
-|PHP_FPM_PM_MAX_CHILDREN|modify the pm.max_children for php-fpm config.|
-|PHP_FPM_PM_PROCESS_IDLE_TIMEOUT|modify the pm.process_idle_timeout. this is availiable when pm = ondemand|
-|PHP_FPM_PM_START_SERVERS|modify the pm.start_servers. this is availiable when pm = dynamic|
-|PHP_FPM_PM_MIN_SPARE_SERVERS|modify the pm.min_spare_servers. this is availiable when pm = dynamic|
-|PHP_FPM_PM_MAX_SPARE_SERVERS|modify the pm.max_spare_servers. this is availiable when pm = dynamic|
-|PHP_FPM_STATUS_ENABLE|enable the fpm status path or not. the path is /status|
-|TIMEOUT|modify the nginx.conf:proxy_read_timeout and php.ini:max_execution_time|
+|Name|Desciption|default value|
+|----|----------|-------------|
+|PHP_MEM_LIMIT|The php memory limit in php.ini. |128M|
+|PHP_FPM_PM|modify the php-fpm processing type, allowed values: static, ondemand, dynamic|dynamic|
+|PHP_FPM_PM_MAX_CHILDREN|modify the pm.max_children for php-fpm config.|300|
+|PHP_FPM_PM_PROCESS_IDLE_TIMEOUT|modify the pm.process_idle_timeout. this is availiable when pm = ondemand||
+|PHP_FPM_PM_START_SERVERS|modify the pm.start_servers. this is availiable when pm = dynamic|10|
+|PHP_FPM_PM_MIN_SPARE_SERVERS|modify the pm.min_spare_servers. this is availiable when pm = dynamic|10|
+|PHP_FPM_PM_MAX_SPARE_SERVERS|modify the pm.max_spare_servers. this is availiable when pm = dynamic|30|
+|PHP_FPM_STATUS_ENABLE|enable the fpm status path or not. the path is /status|false|
+|TIMEOUT|modify the nginx.conf:proxy_read_timeout and php.ini:max_execution_time|30|
+|PHP_UPLOAD_MAX_SIZE|file upload sise|512M|
 
 #### cron support
 * provide default drupal cron, run daily.
