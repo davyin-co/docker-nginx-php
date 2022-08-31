@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        arch:
+          - 'alpine'
+          - 'debian'
         version:
           - '7.1'
           - '7.3'
@@ -39,6 +42,6 @@ jobs:
         push: true
         context: .
         platforms: linux/amd64,linux/arm64
-        file: '${{ matrix.version }}/alpine/Dockerfile'
-        tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-alpine'
+        file: '${{ matrix.version }}/${{ matrix.arch }}/Dockerfile'
+        tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-${{ matrix.arch }}'
 
