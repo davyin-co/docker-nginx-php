@@ -29,7 +29,7 @@ RUN set -ex && \
     curl -fsSL -o /tmp/mysql.deb http://repo.mysql.com/mysql-apt-config_0.8.15-1_all.deb && \
     dpkg -i /tmp/mysql.deb && \
     apt-get update -y --allow-insecure-repositories && \
-    apt-get -y install apt-transport-https lsb-release ca-certificates mysql-client wget && \
+    apt-get -y install apt-transport-https lsb-release ca-certificates mysql-community-client-core mysql-community-client && \
     #curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg && \
     #sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list' && \
     #apt-key adv --fetch-keys 'https://packages.sury.org/php/apt.gpg' > /dev/null 2>&1 && \
