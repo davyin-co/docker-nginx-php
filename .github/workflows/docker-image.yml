@@ -35,7 +35,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
     -
       name: alpine Build and push
-      id: docker_build
+      id: docker_build_alpine
       if: ${{ matrix.arch }} == 'alpine'
       uses: docker/build-push-action@v2
       with:
@@ -45,8 +45,8 @@ jobs:
         file: '${{ matrix.version }}/${{ matrix.arch }}/Dockerfile'
         tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-${{ matrix.arch }}'
     -
-      name: Build and push
-      id: docker_build
+      name: Debian Build and push
+      id: docker_build_debian
       if: ${{ matrix.arch }} == 'debian'
       uses: docker/build-push-action@v2
       with:
