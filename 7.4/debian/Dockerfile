@@ -22,9 +22,11 @@ ENV PHP_FPM_MAX_SPARE_SERVERS=30
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
 
 RUN set -ex && \
-    apt-get clean -y && \
+    mkdir /var/lib/dpkg/{parts,triggers,updates,info,alternatives} && \
     apt-get update -y --allow-insecure-repositories && \
     apt-get -y install apt-transport-https lsb-release ca-certificates wget && \
+    #apt-get install --force-overwrite --reinstall $(dpkg -l | grep ^ii | awk '{print $2}') && \
+    apt-get install -f --reinstall multiarch-support libgcc1 debconf && \
     apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29 && \
     curl -fsSL -o /tmp/mysql.deb http://repo.mysql.com/mysql-apt-config_0.8.15-1_all.deb && \
     dpkg -i /tmp/mysql.deb && \
@@ -47,7 +49,9 @@ RUN set -ex && \
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
     php -r "unlink('composer-setup.php');" && \
-    mv composer.phar /usr/local/bin/composer
+    mv composer.phar /usr/local/bin/composer && \
+    apt-get clean -y 
+
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
