@@ -36,7 +36,7 @@ jobs:
     -
       name: alpine Build and push
       id: docker_build_alpine
-      if: ${{ matrix.arch }} == 'alpine'
+      if: ${{ matrix.arch  == 'alpine' }}
       uses: docker/build-push-action@v2
       with:
         push: true
@@ -47,7 +47,7 @@ jobs:
     -
       name: Debian Build and push
       id: docker_build_debian
-      if: ${{ matrix.arch }} == 'debian'
+      if: ${{ matrix.arch  == 'debian' }}
       uses: docker/build-push-action@v2
       with:
         push: true
