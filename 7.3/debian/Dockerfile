@@ -26,7 +26,6 @@ RUN set -ex && \
     apt-get update -y --allow-insecure-repositories && \
     apt-get -y install apt-transport-https lsb-release ca-certificates wget && \
     #apt-get install --force-overwrite --reinstall $(dpkg -l | grep ^ii | awk '{print $2}') && \
-    apt-get install -f --reinstall multiarch-support libgcc1 debconf && \
     apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29 && \
     curl -fsSL -o /tmp/mysql.deb http://repo.mysql.com/mysql-apt-config_0.8.15-1_all.deb && \
     dpkg -i /tmp/mysql.deb && \
