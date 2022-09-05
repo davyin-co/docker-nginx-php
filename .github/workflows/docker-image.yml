@@ -19,7 +19,7 @@ jobs:
       matrix:
         arch:
           - 'alpine'
-          - 'debian'
+          #- 'debian'
         version:
           - '7.3'
           - '7.4'
