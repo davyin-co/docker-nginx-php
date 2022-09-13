@@ -5,6 +5,8 @@ prepare_service
 
 PROCESS_NAME="drupal"
 check_service_initialized init 20-php-fpm
+## hidden nginx version by default
+echo 'server_tokens off;' > /etc/nginx/snippets/server-token-off.conf
 
 ## disable php version expose
 sed -i "s#expose_php = On#expose_php = Off#g" /etc/php*/php.ini
