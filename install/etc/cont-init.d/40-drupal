@@ -38,8 +38,13 @@ sed -i "s#unix:\/run\/php-fpm\.sock#127.0.0.1:9000#g" /etc/nginx/sites.enabled/d
 HTTP_HEADER_X_FRAME_OPTIONS=${HTTP_HEADER_X_FRAME_OPTIONS:="SAMEORIGIN"};
 sed -i "s#add_header X-Frame-Options SAMEORIGIN;#add_header X-Frame-Options $HTTP_HEADER_X_FRAME_OPTIONS;#g" /etc/nginx/sites.enabled/*.conf
 
-HTTP_HEADER_X_CONTENT_SECURITY_POLICY=${HTTP_HEADER_X_CONTENT_SECURITY_POLICY:="default-src 'self';"};
-sed -i "s#add_header Content-Security-Policy \"default-src 'self';\";#add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";#g" /etc/nginx/sites.enabled/*.conf
+if var_true "${HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE}" ; then
+  ## using default value that in Dockerfile.
+  ## HTTP_HEADER_X_CONTENT_SECURITY_POLICY=${HTTP_HEADER_X_CONTENT_SECURITY_POLICY:="default-src 'self';"};
+  sed -i "s#add_header Content-Security-Policy \"default-src 'self';\";#add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";#g" /etc/nginx/sites.en
+esle
+  sed -i '/add_header Content-Security-Policy/d' /etc/nginx/sites.enabled/*.conf
+fi
 
 # https://www.php.net/manual/en/ini.core.php#ini.variables-order
 #sed -i "s/variables_order = \"GPCS\"/variables_order = \"EGPCS\"/g" /usr/local/etc/php/php.ini
