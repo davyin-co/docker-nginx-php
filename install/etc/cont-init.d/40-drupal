@@ -42,7 +42,7 @@ if var_true "${HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE}" ; then
   ## using default value that in Dockerfile.
   ## HTTP_HEADER_X_CONTENT_SECURITY_POLICY=${HTTP_HEADER_X_CONTENT_SECURITY_POLICY:="default-src 'self';"};
   sed -i "s#add_header Content-Security-Policy \"default-src 'self';\";#add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";#g" /etc/nginx/sites.en
-esle
+else
   sed -i '/add_header Content-Security-Policy/d' /etc/nginx/sites.enabled/*.conf
 fi
 
