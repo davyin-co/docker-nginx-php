@@ -32,7 +32,7 @@ see [docker-compose.yml](https://github.com/sparkpos/docker-nginx-php/blob/maste
 #### php & php-fpm
 |Name|Desciption|default value|
 |----|----------|-------------|
-|PHP_MEM_LIMIT|The php memory limit in php.ini. |128M|
+|PHP_MEMORY_LIMIT|The php memory limit in php.ini. |1024M|
 |PHP_FPM_PM|modify the php-fpm processing type, allowed values: static, ondemand, dynamic|dynamic|
 |PHP_FPM_PM_MAX_CHILDREN|modify the pm.max_children for php-fpm config.|300|
 |PHP_FPM_PM_PROCESS_IDLE_TIMEOUT|modify the pm.process_idle_timeout. this is availiable when pm = ondemand||
