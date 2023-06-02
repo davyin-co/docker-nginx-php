@@ -9,6 +9,7 @@ ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
 ENV PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
+ENV PHP_MEM_LIMIT=1G
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
 RUN apk add --no-cache --virtual tzdata bash php7-pecl-memcached php7-pecl-redis php7-pecl-imagick && \
     php-ext enable igbinary && \
