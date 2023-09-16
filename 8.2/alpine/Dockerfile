@@ -27,7 +27,7 @@ ENV NGINX_ENABLE_COMPRESSION_BROTLI=FALSE
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
 ENV DRUPAL_FILES_PERM_FIXED=TRUE
 
-RUN apk add --no-cache postgresql13-client && \
+RUN apk add --no-cache zip && \
     php-ext enable zip && \
     curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
     chmod +x /usr/local/bin/drush8 && \
