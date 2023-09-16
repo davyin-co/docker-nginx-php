@@ -21,7 +21,6 @@ see [docker-compose.yml](https://github.com/sparkpos/docker-nginx-php/blob/maste
 |Name|Description|default value|
 |----|-----------|------|
 |APP|the type of app, current allowed value: drupal, laravel|drupal|
-|DRUPAL_WEB_ROOT|for drupal project that initialized via compose, the code is located in "web". using this flag to indicate.|""|
 |HTTP_HEADER_X_FRAME_OPTIONS|X-Frame-Options; see [here](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/X-Frame-Options)|SAMEORIGIN|
 |HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE|Enable Content-Security-Policy|FALSE|
 |HTTP_HEADER_X_CONTENT_SECURITY_POLICY|Content-Security-Policy, default value: "default-src 'self';";see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)||
@@ -42,6 +41,13 @@ see [docker-compose.yml](https://github.com/sparkpos/docker-nginx-php/blob/maste
 |PHP_FPM_STATUS_ENABLE|enable the fpm status path or not. the path is /status|false|
 |TIMEOUT|modify the nginx.conf:proxy_read_timeout and php.ini:max_execution_time|30|
 |PHP_UPLOAD_MAX_SIZE|file upload sise|512M|
+
+#### drupal
+
+|Name|Desciption|default value|
+|----|----------|-------------|
+|DRUPAL_WEB_ROOT|for drupal project that initialized via compose, the code is located in "web". using this flag to indicate.|""|
+|DRUPAL_FILES_PERM_FIXED|fixed drupal files permission in /var/www/html/*/sites/*/files /var/www/html/sites/*/files, owner:nginx(80), group:www-data(82), files attributes: 777|TRUE|
 
 #### cron support
 * provide default drupal cron, run daily.
