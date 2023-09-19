@@ -27,6 +27,7 @@ ENV NGINX_ENABLE_COMPRESSION_BROTLI=FALSE
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
 ENV DRUPAL_FILES_PERM_FIXED=TRUE
 ENV NGINX_ENABLE_OPEN_FILE_CACHE=FALSE
+ENV CRON_DRUPAL_CRON=0 1 * * * drush -r /var/www/html/docroot/ cron
 
 RUN apk add --no-cache zip && \
     php-ext enable zip && \
