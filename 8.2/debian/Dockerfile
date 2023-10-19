@@ -7,7 +7,6 @@ ENV LOGROTATE_COMPRESSION_TYPE=NONE
 ENV LOGROTATE_RETAIN_DAYS=60
 #ENV PHP_WEBROOT=docroot
 ENV DRUSH_VERSION 8.4.11
-ENV DRUSH_LAUCHER 0.10.1
 ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
@@ -41,10 +40,9 @@ RUN set -ex && \
     curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
     chmod +x /usr/local/bin/drush8 && \
     drush8 core-status && \
-    ###### install drush laucher ######
-    curl -fsSL -o drush.phar https://github.com/drush-ops/drush-launcher/releases/download/$DRUSH_LAUCHER/drush.phar && \
-    chmod +x drush.phar && \
-    mv drush.phar /usr/local/bin/drush && \
+    ###### Drush execute path ######
+    ENV PATH=${PATH}:/var/www/html/vendor/bin
+    ENV PATH=${PATH}:/var/www/html/bin
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
