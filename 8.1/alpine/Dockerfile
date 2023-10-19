@@ -40,7 +40,7 @@ RUN apk add --no-cache zip && \
     mv composer.phar /usr/local/bin/composer
 
 ###### Drush execute path ######
-ENV PATH=${PATH}:/var/www/html/vendor/bin:/var/www/html/bin
+ENV PATH=/var/www/html/bin:/var/www/html/vendor/bin:${PATH}
 
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
