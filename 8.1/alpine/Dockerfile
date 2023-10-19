@@ -33,14 +33,15 @@ RUN apk add --no-cache zip && \
     curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
     chmod +x /usr/local/bin/drush8 && \
     drush8 core-status && \
-    ###### Drush execute path ######
-    ENV PATH=${PATH}:/var/www/html/vendor/bin
-    ENV PATH=${PATH}:/var/www/html/bin
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
     php -r "unlink('composer-setup.php');" && \
     mv composer.phar /usr/local/bin/composer
+
+###### Drush execute path ######
+ENV PATH=${PATH}:/var/www/html/vendor/bin:/var/www/html/bin
+
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
