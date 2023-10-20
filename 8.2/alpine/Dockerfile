@@ -8,7 +8,7 @@ ENV LOGROTATE_RETAIN_DAYS=60
 #ENV PHP_WEBROOT=docroot
 ENV DRUSH_VERSION 8.4.12
 ENV COLUMNS 0
-ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
+ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
 ENV PHP_ENABLE_IMAGICK=TRUE
@@ -30,8 +30,8 @@ ENV CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron"
 
 RUN apk add --no-cache zip && \
     php-ext enable zip && \
-    curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
-    chmod +x /usr/local/bin/drush8 && \
+    curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+    chmod +x /usr/local/bin/drush && \
     drush8 core-status && \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \

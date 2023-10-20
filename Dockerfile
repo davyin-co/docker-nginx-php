@@ -5,7 +5,7 @@ ENV NGINX_WEBROOT=/var/www/html
 ENV DRUSH_VERSION 8.4.11
 ENV DRUSH_LAUCHER 0.10.1
 ENV COLUMNS 0
-ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
+ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush
 ENV PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
@@ -18,8 +18,8 @@ RUN apk add --no-cache --virtual tzdata bash php7-pecl-memcached php7-pecl-redis
     php-ext enable imagick && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     ###### install drush ######
-    curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
-    chmod +x /usr/local/bin/drush8 && \
+    curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+    chmod +x /usr/local/bin/drush && \
     drush8 core-status && \
     ###### install drush laucher ######
     wget -O drush.phar https://github.com/drush-ops/drush-launcher/releases/download/$DRUSH_LAUCHER/drush.phar && \
