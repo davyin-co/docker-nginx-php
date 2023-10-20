@@ -7,8 +7,6 @@ ENV LOGROTATE_COMPRESSION_TYPE=NONE
 ENV LOGROTATE_RETAIN_DAYS=60
 #ENV PHP_WEBROOT=docroot
 ENV DRUSH_VERSION 8.4.11
-ENV DRUSH_LAUCHER 0.10.1
-ENV DRUSH_LAUNCHER_FALLBACK=/usr/local/bin/drush8
 ENV NGINX_SITE_ENABLED=drupal
 ENV CONTAINER_ENABLE_MONITORING=FALSE
 ENV PHP_ENABLE_IMAGICK=TRUE
@@ -38,19 +36,18 @@ RUN set -ex && \
     #apt-get upgrade -y && \
     #apt-get install -y --no-install-recommends wget && \
     php-ext enable zip && \
-    curl -fsSL -o /usr/local/bin/drush8 https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
-    chmod +x /usr/local/bin/drush8 && \
-    drush8 core-status && \
-    ###### install drush laucher ######
-    curl -fsSL -o drush.phar https://github.com/drush-ops/drush-launcher/releases/download/$DRUSH_LAUCHER/drush.phar && \
-    chmod +x drush.phar && \
-    mv drush.phar /usr/local/bin/drush && \
+    curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+    chmod +x /usr/local/bin/drush && \
+    drush core-status && \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
     php -r "unlink('composer-setup.php');" && \
     mv composer.phar /usr/local/bin/composer && \
     apt-get clean -y 
+
+###### Drush execute path ######
+ENV PATH=/var/www/html/bin:/var/www/html/vendor/bin:${PATH}
 
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
