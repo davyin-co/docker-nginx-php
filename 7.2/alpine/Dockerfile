@@ -38,9 +38,6 @@ RUN apk add --no-cache zip && \
     php -r "unlink('composer-setup.php');" && \
     mv composer.phar /usr/local/bin/composer
 
-###### Drush execute path ######
-ENV PATH=/var/www/html/bin:/var/www/html/vendor/bin:${PATH}
-
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
