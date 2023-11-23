@@ -14,7 +14,7 @@ services:
       - frontend
 
   drupal-example:
-    image: "sparkpos/docker-nginx-php:7.4-alpine"
+    image: "davyinsa/docker-nginx-php:7.4-alpine"
     volumes:
       - ~/your-code:/var/www/html 
     environment:
