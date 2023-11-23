@@ -14,7 +14,7 @@ docker run -d -p 8080:80 -v /path-to-your-laravel-code:/var/www/html -e APP=lara
 ```
 
 ### docker-compose example
-see [docker-compose.yml](https://github.com/sparkpos/docker-nginx-php/blob/master/docker-compose-example.yml)
+see [docker-compose.yml](./docker-compose-example.yml)
 
 ### environment
 #### General
