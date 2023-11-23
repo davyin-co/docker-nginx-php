@@ -16,6 +16,10 @@ docker run -d -p 8080:80 -v /path-to-your-laravel-code:/var/www/html -e APP=lara
 ### docker-compose example
 see [docker-compose.yml](./docker-compose-example.yml)
 
+### Drush
+* Default drush version is 8
+* Using new drush version which in project by defining "path" in docker compose, reference: [docker-compose-example.yml#L25](./docker-compose-example.yml#L25).
+
 ### environment
 #### General
 |Name|Description|default value|
