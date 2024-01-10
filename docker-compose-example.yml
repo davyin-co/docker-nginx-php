@@ -23,7 +23,6 @@ services:
       - HTTP_HEADER_X_FRAME_OPTIONS="allow-from example.com"
       - "HTTP_HEADER_X_CONTENT_SECURITY_POLICY=default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com;"
       # Blow environment variable are for using drush in project
-      # - PATH=/var/www/html/bin:/var/www/html/vendor/bin:$PATH
     hostname: "example.docker"
     networks:
       - frontend
