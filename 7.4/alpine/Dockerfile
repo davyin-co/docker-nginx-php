@@ -1,4 +1,4 @@
-FROM tiredofit/nginx-php-fpm:alpine-7.4
+FROM tiredofit/nginx-php-fpm:7.4-alpine
 ENV TIMEZONE=Asia/Shanghai
 ENV VIRTUAL_PORT=80
 ENV NGINX_WEBROOT=/var/www/html 

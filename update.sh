@@ -9,7 +9,7 @@ sedStr="
 sed -r "$sedStr" $1
 }
 
-versions=(7.1 7.2 7.3 7.4 8.0 8.1 8.2)
+versions=(7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3)
 for version in ${versions[*]}; do
   if [ ! -d ${version}/alpine ]; then
     mkdir -p ${version}/alpine
@@ -26,6 +26,9 @@ for version in ${versions[*]}; do
   if [[ "${version}" = "8.2"  ]]; then
     alpine_php_version=82
   fi
+  if [[ "${version}" = "8.3"  ]]; then
+    alpine_php_version=83
+  fi
   render Dockerfile-alpine.template > $version/alpine/Dockerfile
   # https://github.com/flyve-mdm/docker-environment/issues/68
   if [ "${version}" = "7.1" ]; then
@@ -37,7 +40,7 @@ for version in ${versions[*]}; do
   fi
   # https://www.php.net/manual/en/image.installation.php
   # php 7.4 gd config differenct as before.
-  if [[ "${version}" = "7.4" || "${version}" = "8.0" || "${version}" = "8.1" || "${version}" = "8.2" ]]; then
+  if [[ "${version}" = "7.4" || "${version}" = "8.0" || "${version}" = "8.1" || "${version}" = "8.2" || "${version}" = "8.3" ]]; then
     sed -i "s/with-gd/enable-gd/g" ${version}/alpine/Dockerfile
     sed -i "s/--with-png-dir=\/usr\/include\///g" ${version}/alpine/Dockerfile
     sed -i "s/-dir=/=/g" ${version}/alpine/Dockerfile
