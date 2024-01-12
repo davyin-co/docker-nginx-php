@@ -74,8 +74,8 @@ RUN apk add --no-cache zip && \
         $HOME/.cache
 COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
 ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
-ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
-ADD https://raw.githubusercontent.com/sparkpos/docker-nginx-php/master/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
+ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
+ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/ || exit 1
 WORKDIR /var/www/html
