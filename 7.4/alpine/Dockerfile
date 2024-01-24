@@ -29,6 +29,7 @@ ENV CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron"
 ENV MODS_VERSION=v3
 ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
+ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
 
 RUN apk add --no-cache zip && \
     php-ext enable zip && \
