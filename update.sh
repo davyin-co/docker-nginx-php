@@ -45,6 +45,11 @@ for version in ${versions[*]}; do
     sed -i "s/--with-png-dir=\/usr\/include\///g" ${version}/alpine/Dockerfile
     sed -i "s/-dir=/=/g" ${version}/alpine/Dockerfile
   fi
+  if [[ "${version}" > "8.2" ]]; then
+    sed -i '/DRUSH_VERSION/d' ${version}/alpine/Dockerfile
+    sed -i '/\/bin\/drush/d' ${version}/alpine/Dockerfile
+    sed -i '/drush core-status/d' ${version}/alpine/Dockerfile
+  fi
 done
 # for version in ${versions[*]}; do
 #   if [ ! -d ${version}/debian ]; then
