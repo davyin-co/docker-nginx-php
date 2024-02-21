@@ -29,15 +29,7 @@ for version in ${versions[*]}; do
   if [[ "${version}" = "8.3"  ]]; then
     alpine_php_version=83
   fi
-
-  # Render dockerfile by template.
-  if [[ "${version}" = "7.1" ||  "${version}" = "7.2" || "${version}" = "8.0" || "${version}" = "8.1" || "${version}" = "8.2" ]]; then
-    render Dockerfile-alpine-before-php83.template > $version/alpine/Dockerfile
-  fi
-  if [[ "${version}" = "8.3"  ]]; then
-    render Dockerfile-alpine-after-php83.template > $version/alpine/Dockerfile
-  fi
-
+  render Dockerfile-alpine.template > $version/alpine/Dockerfile
   # https://github.com/flyve-mdm/docker-environment/issues/68
   if [ "${version}" = "7.1" ]; then
     sed -i "s/pecl install xdebug/pecl install xdebug-2.9.0/g" ${version}/alpine/Dockerfile
