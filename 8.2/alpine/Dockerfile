@@ -79,6 +79,6 @@ ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-s
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
 WORKDIR /var/www/html
 EXPOSE 80
