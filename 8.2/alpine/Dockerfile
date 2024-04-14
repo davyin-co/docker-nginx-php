@@ -24,6 +24,7 @@ ENV PHP_FPM_MAX_CHILDREN=300
 ENV PHP_FPM_START_SERVERS=10
 ENV PHP_FPM_MIN_SPARE_SERVERS=5
 ENV PHP_FPM_MAX_SPARE_SERVERS=30
+ENV PHP_ENABLE_CREATE_SAMPLE_PHP=FALSE
 ENV NGINX_ENABLE_COMPRESSION_BROTLI=FALSE
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
 ENV DRUPAL_FILES_PERM_FIXED=TRUE
