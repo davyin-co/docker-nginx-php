@@ -34,7 +34,7 @@ ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
 
-RUN apk add --no-cache zip && \
+RUN apk add --no-cache zip patch && \
     php-ext enable zip && \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
