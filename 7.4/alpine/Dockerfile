@@ -34,8 +34,8 @@ ENV MODS_VERSION=v3
 ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
-
-RUN apk add --no-cache zip patch && \
+## findutils related to https://github.com/linuxserver/docker-baseimage-alpine/commit/f47b402a1a150f17038f9d5f48106eda1f7acd96
+RUN apk add --no-cache zip patch findutils && \
     php-ext enable zip && \
     curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
     chmod +x /usr/local/bin/drush && \
@@ -78,8 +78,8 @@ RUN apk add --no-cache zip patch && \
     rm -rf \
         /tmp/* \
         $HOME/.cache
-COPY --from=ghcr.io/linuxserver/openssh-server:9.3_p2-r1-ls147 /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
-ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/ceaf871d6d9970ae90dc35dbf189afcad0751b7f/docker-mods.v3" "/docker-mods"
+COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
+ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
