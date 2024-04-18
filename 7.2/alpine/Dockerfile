@@ -1,4 +1,4 @@
-FROM tiredofit/nginx-php-fpm:7.2-alpine-7.7.6
+FROM tiredofit/nginx-php-fpm:7.2-alpine
 ENV TIMEZONE=Asia/Shanghai
 ENV VIRTUAL_PORT=80
 ENV NGINX_WEBROOT=/var/www/html 
@@ -79,7 +79,7 @@ RUN apk add --no-cache zip patch && \
         /tmp/* \
         $HOME/.cache
 COPY --from=ghcr.io/linuxserver/openssh-server:9.3_p2-r1-ls147 /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
-ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
+ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/ceaf871d6d9970ae90dc35dbf189afcad0751b7f/docker-mods.v3" "/docker-mods"
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD https://raw.githubusercontent.com/davyin-co/docker-nginx-php/main/conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
