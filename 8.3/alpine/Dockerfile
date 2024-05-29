@@ -34,7 +34,7 @@ ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
 ## findutils related to https://github.com/linuxserver/docker-baseimage-alpine/commit/f47b402a1a150f17038f9d5f48106eda1f7acd96
-RUN apk add --no-cache zip patch findutils && \
+RUN apk add --no-cache zip patch findutils rsync && \
     php-ext enable zip && \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
