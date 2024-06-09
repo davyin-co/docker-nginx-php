@@ -39,7 +39,7 @@ RUN set -ex && \
     #apt-key adv --fetch-keys 'https://packages.sury.org/php/apt.gpg' > /dev/null 2>&1 && \
     #apt-get upgrade -y && \
     #apt-get install -y --no-install-recommends wget && \
-    php-ext enable zip && \
+    php-ext enable zip; \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
         curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
         chmod +x /usr/local/bin/drush && \
