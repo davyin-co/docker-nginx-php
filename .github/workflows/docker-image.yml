@@ -42,29 +42,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       -
-        name: alpine Build and push
-        id: docker_build_alpine
-        if: ${{ matrix.arch  == 'alpine' }}
+        name: Build and push
         uses: docker/build-push-action@v5
         with:
           push: true
           context: .
           platforms: linux/amd64,linux/arm64
-          file: 'Dockerfile.alpine.template'
+          file: 'Dockerfile.${{ matrix.arch }}.template'
           tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-${{ matrix.arch }}'
           build-args: |
             PHP_VERSION=${{ matrix.version }}
-      -
-        name: Debian Build and push
-        id: docker_build_debian
-        if: ${{ matrix.arch  == 'debian' }}
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          context: .
-          platforms: linux/amd64
-          file: 'Dockerfile.debian.template'
-          tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-${{ matrix.arch }}'
-          build-args: |
-            PHP_VERSION=${{ matrix.version }}
-

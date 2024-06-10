@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   nginx-php-fpm-app:
-    #image: tiredofit/nginx-php-fpm:alpine-7.4
+    # image: tiredofit/nginx-php-fpm:7.4-alpine
     build:
       context: ./
       dockerfile: Dockerfile
