@@ -1,6 +1,6 @@
 ARG PHP_VERSION
 
-FROM tiredofit/nginx-php-fpm:${PHP_VERSION}-alpine
+FROM tiredofit/nginx-php-fpm:${UPSTREAM_VERSION}
 
 ARG PHP_VERSION
 ENV TIMEZONE=Asia/Shanghai
