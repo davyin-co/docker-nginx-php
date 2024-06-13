@@ -25,6 +25,21 @@ jobs:
           - '8.1'
           - '8.2'
           - '8.3'
+        array: [
+          {version: "7.4-alpine",  upstream_version: "7.4-alpine-7.7.8"},
+          {version: "8.1-alpine",  upstream_version: "8.1-alpine-7.7.8"},
+          {version: "8.2-alpine",  upstream_version: "8.2-alpine-7.7.8"},
+          {version: "8.3-alpine",  upstream_version: "8.3-alpine-7.7.8"},
+          {version: "7.4-alpine-7.7.7",  upstream_version: "7.4-alpine-7.7.7"},
+          {version: "8.1-alpine-7.7.7",  upstream_version: "8.1-alpine-7.7.7"},
+          {version: "8.2-alpine-7.7.7",  upstream_version: "8.2-alpine-7.7.7"},
+          {version: "8.3-alpine-7.7.7",  upstream_version: "8.3-alpine-7.7.7"},
+          {version: "7.4-alpine-7.7.6",  upstream_version: "7.4-alpine-7.7.6"},
+          {version: "8.1-alpine-7.7.6",  upstream_version: "8.1-alpine-7.7.6"},
+          {version: "8.2-alpine-7.7.6",  upstream_version: "8.2-alpine-7.7.6"},
+          {version: "8.3-alpine-7.7.6",  upstream_version: "8.3-alpine-7.7.6"},
+        ]
+
     steps:
       -
         name: Checkout
@@ -48,7 +63,7 @@ jobs:
           push: true
           context: .
           platforms: linux/amd64,linux/arm64
-          file: 'Dockerfile.${{ matrix.arch }}.template'
-          tags: 'davyinsa/docker-nginx-php:${{ matrix.version }}-${{ matrix.arch }}'
+          file: 'Dockerfile.alpine.template'
+          tags: 'davyinsa/docker-nginx-php:${{ matrix.array.version }}'
           build-args: |
-            PHP_VERSION=${{ matrix.version }}
+            PHP_VERSION=${{ matrix.array.upstream_version }}
