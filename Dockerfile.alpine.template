@@ -1,4 +1,5 @@
 ARG PHP_VERSION
+ARG UPSTREAM_VERSION
 
 FROM tiredofit/nginx-php-fpm:${UPSTREAM_VERSION}
 
