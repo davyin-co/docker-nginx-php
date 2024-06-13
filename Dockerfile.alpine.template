@@ -85,8 +85,11 @@ RUN apk add --no-cache zip patch findutils rsync && \
     rm -rf \
         /tmp/* \
         $HOME/.cache
+## https://github.com/linuxserver/docker-baseimage-alpine/blob/master/Dockerfile#L59
 COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
-ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
+COPY --from=ghcr.io/linuxserver/openssh-server /docker-mods /docker-mods
+COPY --from=ghcr.io/linuxserver/openssh-server /usr/bin/lsiown /usr/bin/lsiown
+## ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
 ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
