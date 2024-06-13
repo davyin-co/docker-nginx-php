@@ -36,6 +36,7 @@ ENV DRUPAL_FILES_PERM_FIXED=TRUE
 ENV NGINX_ENABLE_OPEN_FILE_CACHE=FALSE
 ENV CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron"
 ENV MODS_VERSION=v3
+ENV LSIOWN_VERSION="v1"
 ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
@@ -85,10 +86,11 @@ RUN apk add --no-cache zip patch findutils rsync && \
     rm -rf \
         /tmp/* \
         $HOME/.cache
-## https://github.com/linuxserver/docker-baseimage-alpine/blob/master/Dockerfile#L59
+
 COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
 COPY --from=ghcr.io/linuxserver/openssh-server /docker-mods /docker-mods
-COPY --from=ghcr.io/linuxserver/openssh-server /usr/bin/lsiown /usr/bin/lsiown
+## https://github.com/linuxserver/docker-baseimage-alpine/blob/master/Dockerfile#L59
+ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/lsiown.${LSIOWN_VERSION}" "/usr/bin/lsiown"
 ## ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
 ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
 ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
