@@ -49,6 +49,9 @@ RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client && \
         chmod +x /usr/local/bin/drush && \
         drush core-status; \
     fi; \
+    ## add lsyncd user
+    useradd -u 666 -U -d /config -s /bin/bash lsyncd && \
+    usermod -G www-data lsyncd && \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
@@ -76,8 +79,8 @@ RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config && \
     echo "**** create abc user and make our folders ****" && \
     groupmod -g 1000 users && \
-    useradd -u 911 -U -d /config -s /bin/ash abc && \
-    usermod -G users abc && \
+    useradd -u 911 -U -d /var/www/html -s /bin/ash abc && \
+    usermod -G www-data abc && \
     mkdir -p \
         /app \
         /config \
