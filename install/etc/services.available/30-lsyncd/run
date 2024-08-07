@@ -1,0 +1,11 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+PROCESS_NAME="lsyncd"
+
+check_container_initialized
+check_service_initialized init
+liftoff
+
+print_start "Starting lsyncd "
+exec s6-setuidgid linuxserver.io lsyncd -nodaemon -insist /config/lsyncd.lua

@@ -40,8 +40,9 @@ ENV LSIOWN_VERSION="v1"
 ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
+ENV ENABLE_LSYNCD=FALSE
 ## findutils related to https://github.com/linuxserver/docker-baseimage-alpine/commit/f47b402a1a150f17038f9d5f48106eda1f7acd96
-RUN apk add --no-cache zip patch findutils rsync && \
+RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client && \
     php-ext enable zip; \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
         curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
