@@ -87,7 +87,7 @@ RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client && \
     rm -rf /tmp/* $HOME/.cache && \
     ## add lsyncd user
     useradd -u 666 -U -d /config -s /bin/bash lsyncd && \
-    usermod -G www-data lsyncd \
+    usermod -G www-data lsyncd && \
     ## Unblock some bots
     sed -i '/MQQBrowser/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
     sed -i '/MicroMessenge/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
