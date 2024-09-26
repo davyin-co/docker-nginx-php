@@ -1,9 +1,7 @@
-ARG PHP_VERSION
 ARG UPSTREAM_VERSION
 
 FROM tiredofit/nginx-php-fpm:${UPSTREAM_VERSION}
 
-ARG PHP_VERSION
 ENV TIMEZONE=Asia/Shanghai
 ENV VIRTUAL_PORT=80
 ENV NGINX_WEBROOT=/var/www/html 
@@ -41,7 +39,7 @@ RUN set -ex && \
     #apt-get upgrade -y && \
     #apt-get install -y --no-install-recommends wget && \
     php-ext enable zip; \
-    if [[ "${PHP_VERSION}" < "8.3" ]]; then \
+    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
         curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
         chmod +x /usr/local/bin/drush && \
         drush core-status && \
