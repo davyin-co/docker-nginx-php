@@ -28,7 +28,7 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
     autoconf \
     g++ \
     make \
-    $PHPIZE_DEPS; \
+    $PHPIZE_DEPS \
     # Install Oracle Instantclient
     && mkdir /opt/oracle \
         && cd /opt/oracle \
@@ -41,10 +41,9 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
       && if [ ${OCI_VERSION} -lt 18 ] ; then ln -s /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so.${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so ; fi \
         && rm -rf /opt/oracle/*.zip \
     # Install PHP extensions deps
-    && apk add --no-cache \
+    && apk add --no-cache $PHPIZE_DEPS \
       libaio-dev \
-      freetds-dev \
-      $PHPIZE_DEPS && \
+      freetds-dev && \
     # Install PHP extensions
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.0.12; \
