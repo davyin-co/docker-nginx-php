@@ -1,4 +1,4 @@
-name: Docker Image CI OCI8
+name: Docker Image CI
 
 on: workflow_dispatch
 
@@ -10,7 +10,8 @@ jobs:
         array:
           [
             {
-              version: "8.3-debian-oci8",
+              version: "8.3-debian",
+              php_version: "8.3",
               upstream_version: "8.3-debian",
             },
           ]
@@ -32,10 +33,11 @@ jobs:
         with:
           push: true
           context: .
-          platforms: linux/amd64
-          file: "Dockerfile.debian.oci8.template"
+          platforms: linux/amd64,linux/arm64
+          file: "Dockerfile.debian.template"
           tags: "davyinsa/docker-nginx-php:${{ matrix.array.version }}"
           build-args: |
+            PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
       - name: Login to ALIYUN CR
         uses: docker/login-action@v3
@@ -48,8 +50,9 @@ jobs:
         with:
           push: true
           context: .
-          platforms: linux/amd64
-          file: "Dockerfile.debian.oci8.template"
+          platforms: linux/amd64,linux/arm64
+          file: "Dockerfile.debian.template"
           tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}"
           build-args: |
+            PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
