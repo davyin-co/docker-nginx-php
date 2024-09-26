@@ -7,6 +7,7 @@ FROM davyinsa/docker-nginx-php:${UPSTREAM_VERSION}
 RUN set -xe; \
     apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
+    pecl install docker-php-ext-enable docker-php-ext-configure && \
     apt-get install -yqq \
       apt-utils \
       gnupg2 \

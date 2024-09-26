@@ -27,7 +27,6 @@ RUN set -ex && \
     mkdir /var/lib/dpkg/{parts,triggers,updates,info,alternatives} && \
     apt-get update -y --allow-insecure-repositories && \
     apt-get -y install apt-transport-https lsb-release ca-certificates wget && \
-    pecl install docker-php-ext-enable && \
     #apt-get install --force-overwrite --reinstall $(dpkg -l | grep ^ii | awk '{print $2}') && \
     apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29 && \
     curl -fsSL -o /tmp/mysql.deb http://repo.mysql.com/mysql-apt-config_0.8.15-1_all.deb && \
