@@ -28,6 +28,7 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
     autoconf \
     g++ \
     make \
+    php-dev \
     # Install Oracle Instantclient
     && mkdir /opt/oracle \
         && cd /opt/oracle \
