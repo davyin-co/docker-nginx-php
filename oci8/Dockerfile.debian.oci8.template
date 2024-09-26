@@ -2,12 +2,12 @@ ARG UPSTREAM_VERSION
 
 FROM davyinsa/docker-nginx-php:${UPSTREAM_VERSION}
 
-
+COPY docker-php-source /usr/local/bin/
+COPY docker-php-ext-* /usr/local/bin/
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
-    pecl install docker-php-ext-enable docker-php-ext-configure && \
     apt-get install -yqq \
       apt-utils \
       gnupg2 \

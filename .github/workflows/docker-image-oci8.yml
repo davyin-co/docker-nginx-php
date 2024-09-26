@@ -31,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: .
+          context: "{{defaultContext}}:oci8"
           platforms: linux/amd64
           file: "Dockerfile.debian.oci8.template"
           tags: "davyinsa/docker-nginx-php:${{ matrix.array.version }}"
@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: .
+          context: "{{defaultContext}}:oci8"
           platforms: linux/amd64
           file: "Dockerfile.debian.oci8.template"
           tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}"
