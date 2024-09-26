@@ -41,7 +41,7 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
       && if [ ${OCI_VERSION} -lt 18 ] ; then ln -s /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so.${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so ; fi \
         && rm -rf /opt/oracle/*.zip \
     # Install PHP extensions deps
-    && apk add --no-cache $PHPIZE_DEPS \
+    && apk add --no-cache --virtual .phpize-deps-configure $PHPIZE_DEPS \
       libaio-dev \
       freetds-dev && \
     # Install PHP extensions
