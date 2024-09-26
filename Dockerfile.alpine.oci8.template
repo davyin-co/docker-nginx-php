@@ -24,6 +24,10 @@ ENV OCI_VERSION=${ORACLE_INSTANT_CLIENT_MAJOR}
 RUN if [ ${INSTALL_OCI8} = true ]; then \
     # Install wget
     apk add --no-cache wget \
+    linux-headers \
+    autoconf \
+    g++ \
+    make \
     # Install Oracle Instantclient
     && mkdir /opt/oracle \
         && cd /opt/oracle \
