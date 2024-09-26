@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image CI Debian
 
 on: workflow_dispatch
 
