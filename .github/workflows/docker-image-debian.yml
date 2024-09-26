@@ -12,7 +12,7 @@ jobs:
             {
               version: "8.3-debian",
               php_version: "8.3",
-              upstream_version: "8.3-debian",
+              upstream_version: "8.3-debian-bookworm",
             },
           ]
 
