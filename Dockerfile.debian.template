@@ -39,11 +39,11 @@ RUN set -ex && \
     #apt-get upgrade -y && \
     #apt-get install -y --no-install-recommends wget && \
     php-ext enable zip; \
-    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-        curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
-        chmod +x /usr/local/bin/drush && \
-        drush core-status && \
-    fi; \
+    # if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
+    #     curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+    #     chmod +x /usr/local/bin/drush && \
+    #     drush core-status && \
+    # fi; \
     ##install composer
     php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php && \
     php composer-setup.php && \
