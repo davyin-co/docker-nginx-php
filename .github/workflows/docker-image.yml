@@ -22,32 +22,32 @@ jobs:
             {
               version: "7.4-alpine",
               php_version: "7.4",
-              upstream_version: "7.4-alpine-7.7.8",
+              upstream_version: "7.4-alpine",
             },
             {
               version: "8.0-alpine",
               php_version: "8.0",
-              upstream_version: "8.0-alpine-latest",
+              upstream_version: "8.0-alpine",
             },
             {
               version: "8.1-alpine",
               php_version: "8.1",
-              upstream_version: "8.1-alpine-latest",
+              upstream_version: "8.1-alpine",
             },
             {
               version: "8.2-alpine",
               php_version: "8.2",
-              upstream_version: "8.2-alpine-latest",
+              upstream_version: "8.2-alpine",
             },
             {
               version: "8.3-alpine",
               php_version: "8.3",
-              upstream_version: "8.3-alpine-latest",
+              upstream_version: "8.3-alpine",
             },
             {
               version: "8.4-alpine",
               php_version: "8.4",
-              upstream_version: "8.4-alpine-latest",
+              upstream_version: "8.4-alpine",
             },
             {
               version: "7.4-alpine-7.7.7",
