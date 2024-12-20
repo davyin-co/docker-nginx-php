@@ -55,8 +55,8 @@ RUN set -ex && \
 ###### Drush execute path ######
 ENV PATH=/var/www/html/bin:/var/www/html/vendor/bin:${PATH}
 
-ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
-ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
+#ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
+#ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
 WORKDIR /var/www/html
 EXPOSE 80

@@ -98,8 +98,8 @@ COPY --from=ghcr.io/linuxserver/openssh-server /docker-mods /docker-mods
 ## https://github.com/linuxserver/docker-baseimage-alpine/blob/master/Dockerfile#L59
 ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/lsiown.${LSIOWN_VERSION}" "/usr/bin/lsiown"
 ## ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
-ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
-ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
+# ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
+# ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
 ADD install /
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
 WORKDIR /var/www/html

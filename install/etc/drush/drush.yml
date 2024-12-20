@@ -1,0 +1,11 @@
+command:
+  sql:
+    cli:
+      options:
+        # Enable auto-complete in MySQL.
+        extra: "--skip-ssl"
+    dump:
+      options:
+        extra: "--skip-ssl"
+        extra-dump: "--skip-ssl"
+        structure-tables-list: cache,cache_*,search_index,watchdog
