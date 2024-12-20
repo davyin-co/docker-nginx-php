@@ -2,7 +2,12 @@ command:
   sql:
     cli:
       options:
-        # Enable auto-complete in MySQL.
+        extra: "--skip-ssl"
+    connect:
+      options:
+        extra: "--skip-ssl"
+    query:
+      options:
         extra: "--skip-ssl"
     dump:
       options:
