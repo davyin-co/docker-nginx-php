@@ -13,4 +13,4 @@ command:
       options:
         extra: "--skip-ssl"
         extra-dump: "--skip-ssl"
-        structure-tables-list: cache,cache_*,search_index,watchdog
+        structure-tables-list: cache,cache_*,http_client_log,search_index,watchdog
