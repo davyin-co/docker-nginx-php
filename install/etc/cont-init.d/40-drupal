@@ -57,17 +57,14 @@ fi
 # if the drupal is init by composer, the code directory locate on "web".
 # This options is used to change the nginx root path.
 ## DRUPAL_SUBDIR support.
-if [ ! -z "$DRUPAL_SUBDIR" ]; then
-  # Clear the content of subdir.conf
-  truncate -s 0 /etc/nginx/extra/subdir.conf
-
-  # Split DRUPAL_SUBDIR by comma and write configurations to subdir.conf
-  IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIR"
-  for subdir in "${SUBDIRS[@]}"; do
-    echo "location = /$subdir { return 301 /$subdir/; }" >> /etc/nginx/extra/subdir.conf
-    echo "location ~ /$subdir/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
-  done
-fi
+# Clear the content of subdir.conf
+truncate -s 0 /etc/nginx/extra/subdir.conf
+# Loop through all environment variables starting with DRUPAL_SUBDIR
+for var in $(env | grep -o '^DRUPAL_SUBDIR[^=]*'); do
+  subdir=${!var}
+  echo "location = /$subdir { return 301 /$subdir/; }" >> /etc/nginx/extra/subdir.conf
+  echo "location ~ /$subdir/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+done
 
 if [ ! -z "$PHP_MEM_LIMIT" ]; then
   PHP_MEMORY_LIMIT=$PHP_MEM_LIMIT
