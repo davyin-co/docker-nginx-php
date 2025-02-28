@@ -58,8 +58,15 @@ fi
 # This options is used to change the nginx root path.
 ## DRUPAL_SUBDIR support.
 if [ ! -z "$DRUPAL_SUBDIR" ]; then
-  DRUPAL_SUBDIR=${DRUPAL_SUBDIR:=fake-subdir-placeholder}
-  sed -i "s#fake-subdir-placeholder#$DRUPAL_SUBDIR#g" /etc/nginx/sites.enabled/drupal.conf
+  # Clear the content of subdir.conf
+  : > /etc/nginx/sites.enabled/subdir.conf
+
+  # Split DRUPAL_SUBDIR by comma and write configurations to subdir.conf
+  IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIR"
+  for subdir in "${SUBDIRS[@]}"; do
+    echo "location = /$subdir { return 301 /$subdir/; }" >> /etc/nginx/extra/subdir.conf
+    echo "location ~ /$subdir/(?!.*\\.php$)(.*) { try_files /$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+  done
 fi
 
 if [ ! -z "$PHP_MEM_LIMIT" ]; then
