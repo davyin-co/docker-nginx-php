@@ -65,7 +65,7 @@ if [ ! -z "$DRUPAL_SUBDIR" ]; then
   IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIR"
   for subdir in "${SUBDIRS[@]}"; do
     echo "location = /$subdir { return 301 /$subdir/; }" >> /etc/nginx/extra/subdir.conf
-    echo "location ~ /$subdir/(?!.*\\.php$)(.*) { try_files /$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+    echo "location ~ /$subdir/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
   done
 fi
 
