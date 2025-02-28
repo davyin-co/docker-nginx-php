@@ -27,6 +27,7 @@ see [docker-compose.yml](./docker-compose-example.yml)
 |MAX_FILE_UPLOAD_SIZE|Modify the upload file size, this will change both the nginx & php config.| 32M |
 |LOGROTATE_RETAIN_DAYS|days to keep the logs,such nginx/php-fpm etc|60|
 |CRON_*| Name of the job value of the time and output to be run |`0 2 * * * drush -r /var/www/html cron`|
+|DRUPAL_SUBDIRS| multiple host and subdir |`example.com/subdir,example1.com/subdir1,example2.com/subdir2`|
 
 #### php & php-fpm
 |Name|Desciption|default value|
