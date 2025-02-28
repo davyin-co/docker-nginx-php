@@ -59,7 +59,7 @@ fi
 ## DRUPAL_SUBDIR support.
 if [ ! -z "$DRUPAL_SUBDIR" ]; then
   # Clear the content of subdir.conf
-  truncate -s 0 /etc/nginx/sites.enabled/subdir.conf
+  truncate -s 0 /etc/nginx/extra/subdir.conf
 
   # Split DRUPAL_SUBDIR by comma and write configurations to subdir.conf
   IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIR"
