@@ -59,12 +59,25 @@ fi
 ## DRUPAL_SUBDIR support.
 # Clear the content of subdir.conf
 truncate -s 0 /etc/nginx/extra/subdir.conf
-# Loop through all environment variables starting with DRUPAL_SUBDIR
-for var in $(env | grep -o '^DRUPAL_SUBDIR[^=]*'); do
-  subdir=${!var}
-  echo "location = /$subdir { return 301 /$subdir/; }" >> /etc/nginx/extra/subdir.conf
-  echo "location ~ /$subdir/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
-done
+
+# Handle DRUPAL_SUBDIR if it exists and is not empty
+if [ ! -z "$DRUPAL_SUBDIR" ]; then
+  echo "location = /$DRUPAL_SUBDIR { return 301 /$DRUPAL_SUBDIR/; }" >> /etc/nginx/extra/subdir.conf
+  echo "location ~ /$DRUPAL_SUBDIR/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+fi
+
+# Handle DRUPAL_SUBDIRS if it exists and is not empty
+if [ ! -z "$DRUPAL_SUBDIRS" ]; then
+  IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIRS"
+  for subdir in "${SUBDIRS[@]}"; do
+    IFS='/' read -ra PARTS <<< "$subdir"
+    if [ ${#PARTS[@]} -gt 1 ]; then
+      subdir_value=${PARTS[1]}
+      echo "location = /$subdir_value { return 301 /$subdir_value/; }" >> /etc/nginx/extra/subdir.conf
+      echo "location ~ /$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+    fi
+  done
+fi
 
 if [ ! -z "$PHP_MEM_LIMIT" ]; then
   PHP_MEMORY_LIMIT=$PHP_MEM_LIMIT
