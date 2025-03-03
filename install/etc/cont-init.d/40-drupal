@@ -69,12 +69,16 @@ fi
 # Handle DRUPAL_SUBDIRS if it exists and is not empty
 if [ ! -z "$DRUPAL_SUBDIRS" ]; then
   IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIRS"
+  declare -A processed_subdirs
   for subdir in "${SUBDIRS[@]}"; do
     IFS='/' read -ra PARTS <<< "$subdir"
     if [ ${#PARTS[@]} -gt 1 ]; then
       subdir_value=${PARTS[1]}
-      echo "location = /$subdir_value { return 301 /$subdir_value/; }" >> /etc/nginx/extra/subdir.conf
-      echo "location ~ /$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+      if [ -z "${processed_subdirs[$subdir_value]}" ]; then
+        echo "location = /$subdir_value { return 301 /$subdir_value/; }" >> /etc/nginx/extra/subdir.conf
+        echo "location ~ /$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+        processed_subdirs[$subdir_value]=1
+      fi
     fi
   done
 fi
