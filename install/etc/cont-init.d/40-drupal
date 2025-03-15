@@ -88,10 +88,10 @@ if [ ! -z "$PHP_MEM_LIMIT" ]; then
 fi
 # Increase the timeout
 if [ ! -z "$TIMEOUT" ]; then
-  NGINX_SEND_TIMEOUT=$TIMEOUT 
-  NGINX_READ_TIMEOUT=$TIMEOUT
-  NGINX_CLIENT_HEADER_TIMEOUT=$TIMEOUT
-  NGINX_CLIENT_BODY_TIMEOUT=$TIMEOUT
+  export NGINX_SEND_TIMEOUT=$TIMEOUT
+  export NGINX_READ_TIMEOUT=$TIMEOUT
+  export NGINX_CLIENT_HEADER_TIMEOUT=$TIMEOUT
+  export NGINX_CLIENT_BODY_TIMEOUT=$TIMEOUT
   # sed -i "s/proxy_read_timeout 60;/proxy_read_timeout ${TIMEOUT};/g" /etc/nginx/nginx.conf
   sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.available/
   sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.enabled/
