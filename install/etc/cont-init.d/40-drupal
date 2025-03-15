@@ -87,15 +87,13 @@ if [ ! -z "$PHP_MEM_LIMIT" ]; then
   PHP_MEMORY_LIMIT=$PHP_MEM_LIMIT
 fi
 # Increase the timeout
-if [ ! -z "$TIMEOUT" ]; then
-  export NGINX_SEND_TIMEOUT=$TIMEOUT
-  export NGINX_READ_TIMEOUT=$TIMEOUT
-  export NGINX_CLIENT_HEADER_TIMEOUT=$TIMEOUT
-  export NGINX_CLIENT_BODY_TIMEOUT=$TIMEOUT
-  # sed -i "s/proxy_read_timeout 60;/proxy_read_timeout ${TIMEOUT};/g" /etc/nginx/nginx.conf
-  sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.available/
-  sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.enabled/
-fi
+# mv to NGINX_POST_INIT_SCRIPT
+# if [ ! -z "$TIMEOUT" ]; then
+#   sed -i "s/client_body_timeout 60;/client_body_timeout ${TIMEOUT};/g" /etc/nginx/nginx.conf
+#   sed -i "s/send_timeout 60;/send_timeout ${TIMEOUT};/g" /etc/nginx/nginx.conf
+#   sed -i "s/fastcgi_read_timeout 300;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.available/drupal.conf
+#   sed -i "s/fastcgi_read_timeout 300;/fastcgi_read_timeout ${TIMEOUT};/g" /etc/nginx/sites.enabled/drupal.conf
+# fi
 
 # Increase the post_max_size
 if [ ! -z "$MAX_FILE_UPLOAD_SIZE" ]; then
