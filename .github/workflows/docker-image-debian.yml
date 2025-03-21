@@ -64,7 +64,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.debian.template"
-          tags: "davyinsa/docker-nginx-php:${{ matrix.array.version }}-debian-bookworm"
+          tags: "davyinsa/docker-nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
       - name: Login to ALIYUN CR
@@ -80,6 +80,6 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.debian.template"
-          tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}-debian-bookworm"
+          tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
