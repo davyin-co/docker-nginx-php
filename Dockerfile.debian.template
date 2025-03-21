@@ -50,6 +50,8 @@ RUN apt-get update && \
         findutils \
         rsync \
         lsyncd \
+        vim \
+        telnet \
         openssh-client && \
     php-ext enable zip; \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
