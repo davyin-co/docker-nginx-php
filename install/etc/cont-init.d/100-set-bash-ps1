@@ -4,7 +4,11 @@ prepare_service
 
 export PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
 echo "export PS1='$PS1'" >> /root/.bashrc
+# change shell to bash
 if [ -z "$USER_NAME" ]; then
-  chsh -s /bin/bash $USER_NAME
+    echo "Error: USER_NAME is undefined or empty"
+else
+    echo "Changing default shell for $USER_NAME to /bin/bash"
+    sudo chsh -s /bin/bash $USER_NAME
 fi
 liftoff
