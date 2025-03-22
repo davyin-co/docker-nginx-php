@@ -52,11 +52,12 @@ RUN apt-get update && \
         lsyncd \
         vim \
         telnet \
+        apt-transport-https \
+        curl \
         openssh-client && \
     php-ext enable zip; \
-    ## install mysql client
-    apt remove -y mysql-client mysql-client-core && \
-    apt install -y apt-transport-https curl && \
+    ## install mariadb client
+    apt remove -y mariadb-client mariadb-client-core && \
     curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc' && \
     echo 'deb https://mirrors.xtom.de/mariadb/repo/10.11/debian $(lsb_release -cs) main' > /etc/apt/sources.list.d/mariadb.list && \
     apt update && \
