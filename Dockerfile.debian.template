@@ -59,7 +59,7 @@ RUN apt-get update && \
     ## install mariadb client
     apt remove -y mariadb-client mariadb-client-core && \
     curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc' && \
-    echo 'deb https://mirrors.xtom.de/mariadb/repo/10.11/debian $(lsb_release -cs) main' > /etc/apt/sources.list.d/mariadb.list && \
+    echo "deb https://mirrors.xtom.de/mariadb/repo/10.11/debian $(lsb_release -cs) main" > /etc/apt/sources.list.d/mariadb.list && \
     apt update -y && \
     apt install -y mariadb-client=1:10.11.11+maria~deb12 && \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
