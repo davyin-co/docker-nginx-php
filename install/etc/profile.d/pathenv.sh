@@ -1,1 +1,2 @@
 export PATH=/var/www/html/bin:/var/www/html/vendor/bin:/var/www/html/vendor/drush/drush:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+export PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '

@@ -54,6 +54,13 @@ RUN apt-get update && \
         telnet \
         openssh-client && \
     php-ext enable zip; \
+    ## install mysql client
+    apt remove -y mysql-client mysql-client-core && \
+    apt install -y apt-transport-https curl && \
+    curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc' && \
+    echo 'deb https://mirrors.xtom.de/mariadb/repo/10.11/debian $(lsb_release -cs) main' > /etc/apt/sources.list.d/mariadb.list && \
+    apt update && \
+    apt install mariadb-client=1:10.11.11+maria~deb12 && \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
         curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
         chmod +x /usr/local/bin/drush && \
