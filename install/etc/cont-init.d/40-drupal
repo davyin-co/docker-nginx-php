@@ -10,7 +10,7 @@ echo 'server_tokens off;' > /etc/nginx/snippets/server-token-off.conf
 
 ## disable php version expose
 ## alpine
-if [ -f /etc/php$PHP_BASE/php.ini ]; then
+if [ -f /etc/php*/php.ini ]; then
   sed -i "s#expose_php = On#expose_php = Off#g" /etc/php$PHP_BASE/php.ini
 fi
 ## debian
@@ -19,7 +19,8 @@ if [ -f /etc/php/$PHP_BASE/cli/php.ini ]; then
 fi
 ## disable php display_errors by default.
 ## to enable it, PHP_DISPLAY_ERRORS = TRUE
-if [ -f /etc/php$PHP_BASE/php-fpm.conf ]; then
+## alpine
+if [ -f /etc/php*/php-fpm.conf ]; then
   sed -i "s#php_flag\[display_errors\] = on#php_flag\[display_errors\] = off#g" /etc/php$PHP_BASE/php-fpm.conf
 fi
 ## debian
@@ -27,7 +28,8 @@ if [ -f /etc/php/$PHP_BASE/fpm/php-fpm.conf ]; then
   sed -i "s#display_errors = On#display_errors = Off#g" /etc/php/$PHP_BASE/fpm/php-fpm.conf
 fi
 ## set opcache invalidate freq 60 => 2
-if [ -f /etc/php$PHP_BASE/conf.d/00-opcache.ini ]; then
+## alpine
+if [ -f /etc/php*/conf.d/00-opcache.ini ]; then
   sed -i "s#opcache.revalidate_freq=60#opcache.revalidate_freq=2#g" /etc/php$PHP_BASE/conf.d/00-opcache.ini
 fi
 ## debian
@@ -37,7 +39,8 @@ fi
 
 ## set clear_env = no, so that the php-fpm will know env from container
 # https://serverfault.com/questions/813368/configure-php-fpm-to-access-environment-variables-in-docker
-if [ -f /etc/php$PHP_BASE/php-fpm.conf ]; then
+## alpine
+if [ -f /etc/php*/php-fpm.conf ]; then
   sed -i -e '$a\clear_env = no' /etc/php$PHP_BASE/php-fpm.conf
 fi
 ## debian
