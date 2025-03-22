@@ -9,18 +9,41 @@ check_service_initialized init 20-php-fpm
 echo 'server_tokens off;' > /etc/nginx/snippets/server-token-off.conf
 
 ## disable php version expose
-sed -i "s#expose_php = On#expose_php = Off#g" /etc/php*/php.ini
-
+## alpine
+if [ -f /etc/php$PHP_BASE/php.ini ]; then
+  sed -i "s#expose_php = On#expose_php = Off#g" /etc/php$PHP_BASE/php.ini
+fi
+## debian
+if [ -f /etc/php/$PHP_BASE/cli/php.ini ]; then
+  sed -i "s#expose_php = On#expose_php = Off#g" /etc/php/$PHP_BASE/cli/php.ini
+fi
 ## disable php display_errors by default.
 ## to enable it, PHP_DISPLAY_ERRORS = TRUE
-sed -i "s#php_flag\[display_errors\] = on#php_flag\[display_errors\] = off#g" /etc/php*/php-fpm.conf
-
+if [ -f /etc/php$PHP_BASE/php-fpm.conf ]; then
+  sed -i "s#php_flag\[display_errors\] = on#php_flag\[display_errors\] = off#g" /etc/php$PHP_BASE/php-fpm.conf
+fi
+## debian
+if [ -f /etc/php/$PHP_BASE/fpm/php-fpm.conf ]; then
+  sed -i "s#display_errors = On#display_errors = Off#g" /etc/php/$PHP_BASE/fpm/php-fpm.conf
+fi
 ## set opcache invalidate freq 60 => 2
-sed -i "s#opcache.revalidate_freq=60#opcache.revalidate_freq=2#g" /etc/php*/conf.d/00-opcache.ini
+if [ -f /etc/php$PHP_BASE/conf.d/00-opcache.ini ]; then
+  sed -i "s#opcache.revalidate_freq=60#opcache.revalidate_freq=2#g" /etc/php$PHP_BASE/conf.d/00-opcache.ini
+fi
+## debian
+if [ -f /etc/php/$PHP_BASE/cli/00-opcache.ini ]; then
+  sed -i "s#opcache.revalidate_freq=60#opcache.revalidate_freq=2#g" /etc/php/$PHP_BASE/cli/00-opcache.ini
+fi
 
 ## set clear_env = no, so that the php-fpm will know env from container
 # https://serverfault.com/questions/813368/configure-php-fpm-to-access-environment-variables-in-docker
-sed -i -e '$a\clear_env = no' /etc/php*/php-fpm.conf
+if [ -f /etc/php$PHP_BASE/php-fpm.conf ]; then
+  sed -i -e '$a\clear_env = no' /etc/php$PHP_BASE/php-fpm.conf
+fi
+## debian
+if [ -f /etc/php/$PHP_BASE/fpm/php-fpm.conf ]; then
+  sed -i -e '$a\clear_env = no' /etc/php/$PHP_BASE/fpm/php-fpm.conf
+fi
 
 if [ ! -z "$NGINX_HTTP_PORT" ]; then
   NGINX_HTTP_PORT=${NGINX_HTTP_PORT:=80}
