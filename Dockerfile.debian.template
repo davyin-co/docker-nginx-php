@@ -56,7 +56,7 @@ RUN apt-get update && \
         curl \
         openssh-client && \
     php-ext enable zip && \
-    package install php$PHP_BASE-yaml && \
+    apt install -y php$PHP_BASE-yaml openssl && \
     ## install mariadb client
     apt remove -y mariadb-client mariadb-client-core && \
     curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc' && \
