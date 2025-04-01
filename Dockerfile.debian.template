@@ -55,7 +55,7 @@ RUN apt-get update && \
         apt-transport-https \
         curl \
         openssh-client && \
-    php-ext enable zip; \
+    php-ext enable zip && \
     package install php$PHP_BASE-yaml && \
     ## install mariadb client
     apt remove -y mariadb-client mariadb-client-core && \
