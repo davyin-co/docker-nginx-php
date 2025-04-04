@@ -8,4 +8,4 @@ check_service_initialized init
 liftoff
 
 print_start "Starting lsyncd "
-exec s6-setuidgid lsyncd lsyncd -nodaemon -insist /config/lsyncd.lua
+exec s6-setuidgid root lsyncd -nodaemon -insist /config/lsyncd.lua
