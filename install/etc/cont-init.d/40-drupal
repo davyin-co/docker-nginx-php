@@ -106,7 +106,7 @@ if [ ! -z "$DRUPAL_SUBDIRS" ]; then
         echo "location = /$subdir_value { try_files \$drupal_boost_subdir_try_files_homepage @redirect_$subdir_value; }" >> /etc/nginx/extra/subdir.conf
         echo "location @redirect_$subdir_value { return 301 /$subdir_value/; }" >> /etc/nginx/extra/subdir.conf
         echo "location = /$subdir_value/ { try_files \$drupal_boost_subdir_try_files_homepage @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
-        echo "location ~ /$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 \$drupal_boost_try_files @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
+        echo "location ~ ^/$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 \$drupal_boost_try_files @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
         processed_subdirs[$subdir_value]=1
       fi
     fi
