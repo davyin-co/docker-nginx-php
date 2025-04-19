@@ -20,6 +20,11 @@ jobs:
         array:
           [
             {
+              version: "7.3-alpine",
+              php_version: "7.3",
+              upstream_version: "7.3-alpine",
+            },
+            {
               version: "7.4-alpine",
               php_version: "7.4",
               upstream_version: "7.4-alpine",
