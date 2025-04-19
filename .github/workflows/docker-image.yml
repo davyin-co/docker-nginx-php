@@ -75,6 +75,11 @@ jobs:
               upstream_version: "8.3-alpine-7.7.9",
             },
             {
+              version: "7.3-alpine-7.7.7",
+              php_version: "7.3",
+              upstream_version: "7.3-alpine-7.7.7",
+            },
+            {
               version: "7.4-alpine-7.7.7",
               php_version: "7.4",
               upstream_version: "7.4-alpine-7.7.7",
