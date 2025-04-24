@@ -1,11 +1,11 @@
 settings {
-    logfile = os.getenv("LSYNCD_LOGFILE") or "/tmp/lsyncd.log",
-    statusFile = "/tmp/lsyncd.status",
-    inotifyMode = "CloseWrite or Modify",
-    maxProcesses = 2,
+  logfile = os.getenv("LSYNCD_LOGFILE") or "/tmp/lsyncd.log",
+  statusFile = "/tmp/lsyncd.status",
+  inotifyMode = "CloseWrite or Modify",
+  maxProcesses = 2,
 }
 targets = {
-    os.getenv("LSYNCD_TARGET"),
+  os.getenv("LSYNCD_TARGET"),
 }
 for _, target in ipairs( targets )
 do
@@ -51,8 +51,8 @@ sync {
     binary = "/usr/bin/rsync",
     archive = true,
     compress = true,
-    bwlimit = 2000,
-    password_file =  "/config/rsyncd.secrets",
+    bwlimit = 20000,
+    rsh = "sshpass -p " .. os.getenv("LSYNCD_TARGET_PASSWORD") .. " ssh -p " .. os.getenv("LSYNCD_TARGET_PORT") .. " -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
   }
 }
 end
