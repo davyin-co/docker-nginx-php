@@ -79,6 +79,7 @@ RUN apt-get update && \
         logrotate \
         nano \
         coreutils \
+        sshpass \
         netcat-openbsd \
         sudo && \
     echo "**** install openssh-server ****" && \
