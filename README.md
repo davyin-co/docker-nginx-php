@@ -76,5 +76,5 @@ see [docker-compose.yml](./docker-compose-example.yml)
 | Name                          | Description                                                                                   | default value |
 | ----------------------------- | --------------------------------------------------------------------------------------------- | ------------- |
 | LSYNCD_ENABLE                 | enable lsyncd or not                                                                          | FALSE         |
-| LSYNCD_TARGET                 | 1. /data/target<br />2. lsyncd://admin@192.168.1.1/volume                                     | """           |
+| LSYNCD_TARGET                 | 1. /data/target<br />2. rsync://admin@192.168.1.1/volume                                     | """           |
 | LSYNCD_TARGET_RSYNCD_PASSWORD | target rsyncd server password.<br />For multiple rsyncd server, the password must be the same | ""            |
