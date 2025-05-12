@@ -52,7 +52,7 @@ sync {
     archive = true,
     compress = true,
     bwlimit = 20000,
-    rsh = "sshpass -p " .. os.getenv("LSYNCD_TARGET_PASSWORD") .. " ssh -p " .. os.getenv("LSYNCD_TARGET_PORT") .. " -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
+    password_file =  "/config/rsyncd.secrets",
   }
 }
 end
