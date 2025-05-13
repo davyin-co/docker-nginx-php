@@ -1,5 +1,6 @@
 ARG PHP_VERSION
 
+FROM mariadb:10.11.3 as mariadb_builder
 FROM tiredofit/nginx-php-fpm:$PHP_VERSION-debian-bookworm
 
 ARG PHP_VERSION
@@ -50,19 +51,16 @@ RUN apt-get update && \
         findutils \
         rsync \
         lsyncd \
-        vim \
         telnet \
+        vim \
         apt-transport-https \
         curl \
+        libmariadb3 \
         openssh-client && \
     php-ext enable zip && \
     apt install -y php$PHP_BASE-yaml openssl && \
     ## install mariadb client
     apt remove -y mariadb-client mariadb-client-core && \
-    curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc' && \
-    echo "deb https://mirrors.xtom.de/mariadb/repo/10.11/debian $(lsb_release -cs) main" > /etc/apt/sources.list.d/mariadb.list && \
-    apt update -y && \
-    apt install -y mariadb-client=1:10.11.11+maria~deb12 && \
     if [[ "${PHP_VERSION}" < "8.3" ]]; then \
         curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
         chmod +x /usr/local/bin/drush && \
@@ -107,6 +105,11 @@ RUN apt-get update && \
     sed -i '/MQQBrowser/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
     sed -i '/MicroMessenge/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
     sed -i '/Baidu/d' /etc/nginx/snippets/blockbots/globalblacklist.conf
+COPY --from=mariadb_builder /usr/bin/mariadb* /usr/bin/
+COPY --from=mariadb_builder /usr/bin/mysql* /usr/bin/
+RUN ls -l /usr/bin/mariadb* /usr/bin/mysql* && \
+    mariadb --version && \
+    mysql --version
 
 COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
 COPY --from=ghcr.io/linuxserver/openssh-server /docker-mods /docker-mods
