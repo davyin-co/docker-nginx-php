@@ -89,7 +89,7 @@ truncate -s 0 /etc/nginx/extra/subdir.conf
 # Handle DRUPAL_SUBDIR if it exists and is not empty
 if [ ! -z "$DRUPAL_SUBDIR" ]; then
   # echo "location ~ ^/$DRUPAL_SUBDIR/(?!.*\\.php\$)(.*) { try_files /\$1 \$drupal_boost_try_files @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
-cat <<EOF > /etc/nginx/extra/subdir.conf
+cat <<EOF >> /etc/nginx/extra/subdir.conf
 location = /$DRUPAL_SUBDIR { try_files \$drupal_boost_subdir_try_files_homepage @redirect_$DRUPAL_SUBDIR; }
 location @redirect_$DRUPAL_SUBDIR { return 301 /$DRUPAL_SUBDIR/; }
 location = /$DRUPAL_SUBDIR/ { try_files \$drupal_boost_subdir_try_files_homepage @rewrite_subdir; }
@@ -102,6 +102,7 @@ location ~ ^/$DRUPAL_SUBDIR/(?!.*\\.php\$)(.*) {
   }
   try_files /\$1 \$drupal_boost_try_files @rewrite_subdir;
 }
+
 EOF
 fi
 
@@ -115,7 +116,7 @@ if [ ! -z "$DRUPAL_SUBDIRS" ]; then
       subdir_value=${PARTS[1]}
       if [ -z "${processed_subdirs[$subdir_value]}" ]; then
         # echo "location ~ ^/$subdir_value/(?!.*\\.php\$)(.*) { try_files /\$1 \$drupal_boost_try_files @rewrite_subdir; }" >> /etc/nginx/extra/subdir.conf
-cat <<EOF > /etc/nginx/extra/subdir.conf
+cat <<EOF >> /etc/nginx/extra/subdir.conf
 location = /$subdir_value { try_files \$drupal_boost_subdir_try_files_homepage @redirect_$subdir_value; }
 location @redirect_$subdir_value { return 301 /$subdir_value/; }
 location = /$subdir_value/ { try_files \$drupal_boost_subdir_try_files_homepage @rewrite_subdir; }
@@ -128,6 +129,7 @@ location ~ ^/$subdir_value/(?!.*\\.php\$)(.*) {
   }
   try_files /\$1 \$drupal_boost_try_files @rewrite_subdir;
 }
+
 EOF
         processed_subdirs[$subdir_value]=1
       fi
