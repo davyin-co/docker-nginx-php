@@ -20,20 +20,19 @@ jobs:
         array:
           [
             {
+              php_version: "7.4",
+            },
+            {
               php_version: "8.1",
-              upstream_version: "8.1-alpine",
             },
             {
               php_version: "8.2",
-              upstream_version: "8.2-alpine",
             },
             {
               php_version: "8.3",
-              upstream_version: "8.3-alpine",
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-alpine",
             }
           ]
 
