@@ -21,18 +21,23 @@ jobs:
           [
             {
               php_version: "7.4",
+              upstream_version: "7.4",
             },
             {
               php_version: "8.1",
+              upstream_version: "8.1-debian-bookworm",
             },
             {
               php_version: "8.2",
+              upstream_version: "8.2-debian-bookworm",
             },
             {
               php_version: "8.3",
+              upstream_version: "8.3-debian-bookworm",
             },
             {
               php_version: "8.4",
+              upstream_version: "8.4-debian-bookworm",
             }
           ]
 
@@ -58,6 +63,7 @@ jobs:
           tags: "davyinsa/docker-nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
+            UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
       - name: Login to ALIYUN CR
         uses: docker/login-action@v3
         with:
@@ -74,3 +80,4 @@ jobs:
           tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
+            UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
