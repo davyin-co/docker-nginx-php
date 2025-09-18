@@ -19,10 +19,10 @@ jobs:
       matrix:
         array:
           [
-            {
-              php_version: "7.4",
-              upstream_version: "7.4",
-            },
+            # {
+            #   php_version: "7.4",
+            #   upstream_version: "7.4",
+            # },
             {
               php_version: "8.1",
               upstream_version: "8.1-debian-bookworm",
@@ -53,31 +53,20 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Build and push to dockerhub
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          context: .
-          platforms: linux/amd64,linux/arm64
-          file: "Dockerfile.debian.template"
-          tags: "davyinsa/docker-nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
-          build-args: |
-            PHP_VERSION=${{ matrix.array.php_version }}
-            UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
       - name: Login to ALIYUN CR
         uses: docker/login-action@v3
         with:
           registry: registry.cn-hangzhou.aliyuncs.com
           username: ${{ secrets.ALIYUNCR_USERNAME }}
           password: ${{ secrets.ALIYUNCR_PASSWORD }}
-      - name: Build and push to dockerhub
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           push: true
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.debian.template"
-          tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.php_version }}-debian-bookworm"
+          tags: davyinsa/docker-nginx-php:${{ matrix.array.php_version }}-debian-bookworm,registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.php_version }}-debian-bookworm
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}

@@ -113,17 +113,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Build and push to dockerhub
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          context: .
-          platforms: linux/amd64,linux/arm64
-          file: "Dockerfile.alpine.template"
-          tags: "davyinsa/docker-nginx-php:${{ matrix.array.version }}"
-          build-args: |
-            PHP_VERSION=${{ matrix.array.php_version }}
-            UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
       - name: Login to ALIYUN CR
         uses: docker/login-action@v3
         with:
@@ -137,7 +126,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.alpine.template"
-          tags: "registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}"
+          tags: davyinsa/docker-nginx-php:${{ matrix.array.version }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
