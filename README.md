@@ -1,6 +1,6 @@
 ### Version
 davyinsa/docker-nginx-php: {TAG_NAME}  
-egistry.cn-hangzhou.aliyuncs.com/davyin/nginx-php: {TAG_NAME}  
+registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php: {TAG_NAME}  
 
 Avaliable tags:  
 * 7.4-alpine
