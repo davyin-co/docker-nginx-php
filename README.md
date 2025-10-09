@@ -1,3 +1,18 @@
+### Version
+davyinsa/docker-nginx-php: {TAG_NAME}  
+egistry.cn-hangzhou.aliyuncs.com/davyin/nginx-php: {TAG_NAME}  
+
+Avaliable tags:  
+* 7.4-alpine
+* 8.1-alpine
+* 8.2-alpine
+* 8.3-alpine
+* 8.4-alpine
+* 8.2-debian_trixie
+* 8.3-debian_trixie
+* 8.4-debian_trixie
+
+
 ### Overview
 
 Build nginx+php-fpm in one docker image, with predifined nginx config for Drupal, Laravel etc.

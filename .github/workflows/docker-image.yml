@@ -20,27 +20,22 @@ jobs:
         array:
           [
             {
-              version: "7.4-alpine",
               php_version: "7.4",
               upstream_version: "7.4-alpine",
             },
             {
-              version: "8.1-alpine",
               php_version: "8.1",
               upstream_version: "8.1-alpine",
             },
             {
-              version: "8.2-alpine",
               php_version: "8.2",
               upstream_version: "8.2-alpine",
             },
             {
-              version: "8.3-alpine",
               php_version: "8.3",
               upstream_version: "8.3-alpine",
             },
             {
-              version: "8.4-alpine",
               php_version: "8.4",
               upstream_version: "8.4-alpine",
             }
@@ -71,7 +66,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.alpine.template"
-          tags: davyinsa/docker-nginx-php:${{ matrix.array.version }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.version }}
+          tags: davyinsa/docker-nginx-php:${{ matrix.array.upstream_version }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.upstream_version }}
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
