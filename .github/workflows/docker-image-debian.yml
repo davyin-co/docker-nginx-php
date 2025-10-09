@@ -36,6 +36,10 @@ jobs:
               upstream_version: "8.3-debian-bookworm",
             },
             {
+              php_version: "8.3",
+              upstream_version: "8.3-debian-bookworm-7.7.20",
+            },
+            {
               php_version: "8.4",
               upstream_version: "8.4-debian-bookworm",
             }
@@ -66,7 +70,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.debian.template"
-          tags: davyinsa/docker-nginx-php:${{ matrix.array.php_version }}-debian-bookworm,registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.php_version }}-debian-bookworm
+          tags: davyinsa/docker-nginx-php:${{ matrix.array.upstream_version }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.upstream_version }}
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
