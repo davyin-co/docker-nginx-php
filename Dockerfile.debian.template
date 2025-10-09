@@ -2,7 +2,7 @@ ARG PHP_VERSION
 ARG UPSTREAM_VERSION
 
 FROM mariadb:10.11.3 as mariadb_builder
-FROM tiredofit/nginx-php-fpm:${UPSTREAM_VERSION}
+FROM nfrastack/nginx-php-fpm:${UPSTREAM_VERSION}
 
 ARG PHP_VERSION
 ENV TIMEZONE=Asia/Shanghai
