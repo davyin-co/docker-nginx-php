@@ -20,15 +20,15 @@ jobs:
           [
             {
               php_version: "8.2",
-              upstream_version: "8.2-debian-trixie",
+              upstream_version: "8.2-debian_trixie",
             },
             {
               php_version: "8.3",
-              upstream_version: "8.3-debian-trixie",
+              upstream_version: "8.3-debian_trixie",
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-debian-trixie",
+              upstream_version: "8.4-debian_trixie",
             }
           ]
 

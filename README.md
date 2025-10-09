@@ -8,9 +8,9 @@ Avaliable tags:
 * 8.2-alpine
 * 8.3-alpine
 * 8.4-alpine
-* 8.2-debian-trixie
-* 8.3-debian-trixie
-* 8.4-debian-trixie
+* 8.2-debian_trixie
+* 8.3-debian_trixie
+* 8.4-debian_trixie
 
 
 ### Overview
