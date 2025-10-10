@@ -21,23 +21,28 @@ jobs:
           [
             {
               php_version: "7.4",
-              upstream_version: "7.4-debian-bullseye-7.7.20",
+              upstream_version: "7.4-debian-bookworm-7.7.20",
+              platforms: "linux/amd64"
             },
             {
               php_version: "8.1",
               upstream_version: "8.1-debian-bookworm-7.7.20",
+              platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.2",
               upstream_version: "8.2-debian-bookworm-7.7.20",
+              platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.3",
               upstream_version: "8.3-debian-bookworm-7.7.20",
+              platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.4",
               upstream_version: "8.4-debian-bookworm-7.7.20",
+              platforms: "linux/amd64,linux/arm64"
             }
           ]
 
@@ -64,7 +69,7 @@ jobs:
         with:
           push: true
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.array.platforms }}
           file: "Dockerfile.debian.template"
           tags: davyinsa/docker-nginx-php:${{ matrix.array.upstream_version }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.upstream_version }}
           build-args: |
