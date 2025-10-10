@@ -25,7 +25,7 @@ jobs:
             },
             {
               php_version: "8.1",
-              upstream_version: "8.1-alpine-7.7.20",
+              upstream_version: "8.1-alpine-7.7.19",
             },
             {
               php_version: "8.2",
