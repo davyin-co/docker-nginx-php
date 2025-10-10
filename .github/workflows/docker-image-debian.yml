@@ -19,21 +19,17 @@ jobs:
       matrix:
         array:
           [
-            # {
-            #   php_version: "7.4",
-            #   upstream_version: "7.4",
-            # },
+            {
+              php_version: "7.4",
+              upstream_version: "7.4-debian-bookworm-7.7.19",
+            },
             {
               php_version: "8.1",
-              upstream_version: "8.1-debian-bookworm",
+              upstream_version: "8.1-debian-bookworm-7.7.20",
             },
             {
               php_version: "8.2",
-              upstream_version: "8.2-debian-bookworm",
-            },
-            {
-              php_version: "8.3",
-              upstream_version: "8.3-debian-bookworm",
+              upstream_version: "8.2-debian-bookworm-7.7.20",
             },
             {
               php_version: "8.3",
@@ -41,7 +37,7 @@ jobs:
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-debian-bookworm",
+              upstream_version: "8.4-debian-bookworm-7.7.20",
             }
           ]
 
