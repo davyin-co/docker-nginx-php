@@ -1,54 +1,67 @@
-version: "3"
-services:
-  nginx-proxy:
-    image: "nginx-proxy/nginx-proxy"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      #- "./nginx/custom.conf:/etc/nginx/conf.d/my_custom_proxy_settings.conf"
-    ports:
-      - "80:80"
-    environment:
-      - HTTPS_METHOD=nohttps
-      - HSTS=off
-    networks:
-      - frontend
+version: "3.8"
 
+services:
+  # Example: Drupal with nginx-proxy for automatic HTTPS
   drupal-example:
-    image: "davyinsa/docker-nginx-php:7.4-alpine"
+    image: davyinsa/docker-nginx-php:8.4-alpine
     volumes:
-      - ~/your-code:/var/www/html 
+      - ~/your-drupal-code:/var/www/html
+      - ./logs:/www/logs
     environment:
+      # Virtual host for nginx-proxy
       - VIRTUAL_HOST=example.dev,example.local
-      - DRUPAL_WEB_ROOT=web
-      - HTTP_HEADER_X_FRAME_OPTIONS="allow-from example.com"
-      - "HTTP_HEADER_X_CONTENT_SECURITY_POLICY=default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com;"
-      # Blow environment variable are for using drush in project
-    hostname: "example.docker"
+
+      # Drupal configuration
+      - DRUPAL_WEB_ROOT=web  # Set if using Composer-based Drupal
+
+      # Security headers
+      - HTTP_HEADER_X_FRAME_OPTIONS=SAMEORIGIN
+      - HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE=TRUE
+      - "HTTP_HEADER_X_CONTENT_SECURITY_POLICY=default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com;"
+
+      # PHP configuration
+      - PHP_MEMORY_LIMIT=1024M
+      - PHP_FPM_MAX_CHILDREN=300
+
+      # Optional: Enable SSH access
+      # - USER_NAME=admin
+      # - PASSWORD_ACCESS=true
+      # - USER_PASSWORD=your-password
+
+      # Optional: Cron jobs
+      - CRON_DRUPAL_CRON=0 * * * * drush -r /var/www/html cron
+    hostname: example.docker
     networks:
       - frontend
       - backend
+    restart: unless-stopped
 
+  # Database
   mysql:
-    image: mariadb:10.5
+    image: mariadb:10.11
     ports:
       - "3306:3306"
     volumes:
       - ~/storage/mariadb:/var/lib/mysql
-      - ./etc/mysql/my.cnf:/etc/my.cnf
-    privileged: true
+      - ./etc/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
-      TZ: 'Asia/Shanghai'
-      MYSQL_ROOT_PASSWORD: "password"
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: password
       MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
     networks:
       - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 networks:
   frontend:
     driver: bridge
-    ipam:
-      driver: default
   backend:
     driver: bridge
-    ipam:
-      driver: default
