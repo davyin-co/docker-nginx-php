@@ -20,24 +20,19 @@ jobs:
         array:
           [
             {
-              php_version: "7.4",
-              upstream_version: "7.4-alpine-7.7.20",
-              tag: "7.4-alpine"
-            },
-            {
-              php_version: "8.1",
-              upstream_version: "8.1-alpine-7.7.19",
-              tag: "8.1-alpine"
-            },
-            {
-              php_version: "8.2",
-              upstream_version: "8.2-alpine-7.7.20",
-              tag: "8.2-alpine"
-            },
-            {
               php_version: "8.3",
-              upstream_version: "8.3-alpine-7.7.20",
+              upstream_version: "8.3-alpine_3.23",
               tag: "8.3-alpine"
+            },
+            {
+              php_version: "8.4",
+              upstream_version: "8.4-alpine_3.23",
+              tag: "8.4-alpine"
+            },
+            {
+              php_version: "8.5",
+              upstream_version: "8.5-alpine_3.23",
+              tag: "8.5-alpine"
             },
           ]
 

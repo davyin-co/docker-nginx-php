@@ -1,0 +1,140 @@
+#!/command/with-contenv bash
+#
+# Drupal site configuration init script
+# Adapted for nfrastack/container-nginx-php-fpm 8.x
+#
+# Path differences between Alpine and Debian in nfrastack images:
+#   Alpine: /etc/php84/php.ini, /etc/php84/php-fpm.conf, /etc/php84/conf.d/
+#   Debian: /etc/php/X.Y/cli/php.ini, /etc/php/X.Y/fpm/php-fpm.conf, /etc/php/X.Y/fpm/conf.d/
+
+source /container/base/functions/container/init
+prepare_service single
+SERVICE_NAME="drupal"
+
+DRUPAL_CONF="/etc/nginx/sites.enabled/drupal.conf"
+
+# --- Detect PHP paths ---
+# Alpine: /etc/php81, /etc/php82, /etc/php83, /etc/php84 etc.
+# Debian: /etc/php/X.Y/cli/php.ini, /etc/php/X.Y/fpm/php-fpm.conf
+PHP_DIR=$(ls -d /etc/php[0-9]* 2>/dev/null | head -1)
+if [ -n "$PHP_DIR" ]; then
+    # Alpine
+    PHP_INI="${PHP_DIR}/php.ini"
+    PHP_FPM_CONF="${PHP_DIR}/php-fpm.conf"
+    PHP_FPM_POOL_CONF="${PHP_DIR}/pools.d/www.conf"
+elif [ -d /etc/php ]; then
+    # Debian - find the PHP version directory
+    PHP_DIR=$(find /etc/php -maxdepth 1 -mindepth 1 -type d | head -1)
+    PHP_INI="${PHP_DIR}/cli/php.ini"
+    PHP_FPM_CONF="${PHP_DIR}/fpm/php-fpm.conf"
+    PHP_FPM_POOL_CONF="${PHP_DIR}/fpm/pools.d/www.conf"
+fi
+
+# --- expose_php = Off ---
+if [ -n "$PHP_INI" ] && [ -f "$PHP_INI" ]; then
+    sed -i "s#expose_php = On#expose_php = Off#g" "$PHP_INI"
+    print_debug "Set expose_php = Off in $PHP_INI"
+fi
+
+# --- opcache.revalidate_freq is already 2 in nfrastack images, no change needed ---
+
+# --- clear_env = no (pool-level directive, must be in [www] pool config) ---
+if [ -n "$PHP_FPM_POOL_CONF" ] && [ -f "$PHP_FPM_POOL_CONF" ]; then
+    if ! grep -q '^[[:space:]]*clear_env[[:space:]]*=' "$PHP_FPM_POOL_CONF"; then
+        # Insert clear_env = no right after [www] section header
+        sed -i '/^\[www\]/a clear_env = no' "$PHP_FPM_POOL_CONF"
+        print_debug "Added clear_env = no to $PHP_FPM_POOL_CONF"
+    fi
+elif [ -n "$PHP_FPM_CONF" ] && [ -f "$PHP_FPM_CONF" ]; then
+    # Alpine fallback: php-fpm.conf works at global level too
+    if ! grep -q '^[[:space:]]*clear_env[[:space:]]*=' "$PHP_FPM_CONF"; then
+        echo "clear_env = no" >> "$PHP_FPM_CONF"
+        print_debug "Added clear_env = no to $PHP_FPM_CONF"
+    fi
+fi
+
+# --- Custom nginx port ---
+if [ ! -z "$NGINX_HTTP_PORT" ]; then
+    NGINX_HTTP_PORT=${NGINX_HTTP_PORT:=80}
+    sed -i "s#listen 80;#listen $NGINX_HTTP_PORT;#g" "$DRUPAL_CONF" 2>/dev/null
+fi
+
+# --- DRUPAL_WEB_ROOT support (for composer-based Drupal projects) ---
+if [ ! -z "$DRUPAL8_WEB_DIR" ]; then
+    DRUPAL8_WEB_DIR=${DRUPAL8_WEB_DIR:=web}
+    sed -i "s#root \/var\/www\/html;#root \/var\/www\/html\/$DRUPAL8_WEB_DIR;#g" "$DRUPAL_CONF" 2>/dev/null
+fi
+if [ ! -z "$DRUPAL_WEB_ROOT" ]; then
+    DRUPAL_WEB_DIR=${DRUPAL_WEB_ROOT:=web}
+    sed -i "s#root \/var\/www\/html;#root \/var\/www\/html\/$DRUPAL_WEB_ROOT;#g" "$DRUPAL_CONF" 2>/dev/null
+fi
+
+# --- HTTP security headers ---
+HTTP_HEADER_X_FRAME_OPTIONS=${HTTP_HEADER_X_FRAME_OPTIONS:="SAMEORIGIN"};
+sed -i "s#add_header X-Frame-Options SAMEORIGIN;#add_header X-Frame-Options $HTTP_HEADER_X_FRAME_OPTIONS;#g" "$DRUPAL_CONF" 2>/dev/null
+
+if var_true "${HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE}" ; then
+    sed -i "s#add_header Content-Security-Policy \"default-src 'self';\";#add_header Content-Security-Policy \"$HTTP_HEADER_X_CONTENT_SECURITY_POLICY\";#g" "$DRUPAL_CONF" 2>/dev/null
+else
+    sed -i '/add_header Content-Security-Policy/d' "$DRUPAL_CONF" 2>/dev/null
+fi
+
+# --- DRUPAL_SUBDIRS support ---
+truncate -s 0 /etc/nginx/extra/subdir.conf 2>/dev/null
+
+if [ ! -z "$DRUPAL_SUBDIR" ]; then
+cat <<EOF >> /etc/nginx/extra/subdir.conf
+location = /$DRUPAL_SUBDIR { try_files \$drupal_boost_subdir_try_files_homepage @redirect_$DRUPAL_SUBDIR; }
+location @redirect_$DRUPAL_SUBDIR { return 301 /$DRUPAL_SUBDIR/; }
+location = /$DRUPAL_SUBDIR/ { try_files \$drupal_boost_subdir_try_files_homepage @rewrite_subdir; }
+location ~ ^/$DRUPAL_SUBDIR/(?!.*\\.php\$)(.*) {
+  location ~* ^/$DRUPAL_SUBDIR/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|mp4|mkv|mov|wmv|avi)\$ {
+    log_not_found off;
+    add_header Pragma public;
+    add_header Cache-Control "public, max-age=2592000";
+    try_files /\$1.\$2 \$drupal_boost_try_files @rewrite_subdir;
+  }
+  try_files /\$1 \$drupal_boost_try_files @rewrite_subdir;
+}
+EOF
+fi
+
+if [ ! -z "$DRUPAL_SUBDIRS" ]; then
+    IFS=',' read -ra SUBDIRS <<< "$DRUPAL_SUBDIRS"
+    declare -A processed_subdirs
+    for subdir in "${SUBDIRS[@]}"; do
+        IFS='/' read -ra PARTS <<< "$subdir"
+        if [ ${#PARTS[@]} -gt 1 ]; then
+            subdir_value=${PARTS[1]}
+            if [ -z "${processed_subdirs[$subdir_value]}" ]; then
+cat <<EOF >> /etc/nginx/extra/subdir.conf
+location = /$subdir_value { try_files \$drupal_boost_subdir_try_files_homepage @redirect_$subdir_value; }
+location @redirect_$subdir_value { return 301 /$subdir_value/; }
+location = /$subdir_value/ { try_files \$drupal_boost_subdir_try_files_homepage @rewrite_subdir; }
+location ~ ^/$subdir_value/(?!.*\\.php\$)(.*) {
+  location ~* ^/$subdir_value/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|mp4|mkv|mov|wmv|avi)\$ {
+    log_not_found off;
+    add_header Pragma public;
+    add_header Cache-Control "public, max-age=2592000";
+    try_files /\$1.\$2 \$drupal_boost_try_files @rewrite_subdir;
+  }
+  try_files /\$1 \$drupal_boost_try_files @rewrite_subdir;
+}
+EOF
+                processed_subdirs[$subdir_value]=1
+            fi
+        fi
+    done
+fi
+
+# --- Drupal files permission fix ---
+if var_true "${DRUPAL_FILES_PERM_FIXED}"; then
+    print_notice "Starting Drupal files permission fix"
+    if [ -d "/var/www/html/sites/default/files" ]; then
+        cd /var/www/html/sites/default/files
+        find . -not -path "*.snapshot" -mindepth 1 -maxdepth 1 -exec chown -R nginx:www-data {} + 2>/dev/null
+        find . -not -path "*.snapshot" -mindepth 1 -maxdepth 1 -exec chmod -R 777 {} + 2>/dev/null
+    fi
+fi
+
+liftoff

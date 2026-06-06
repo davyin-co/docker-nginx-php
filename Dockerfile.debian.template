@@ -2,7 +2,7 @@ ARG PHP_VERSION
 ARG UPSTREAM_VERSION
 
 FROM mariadb:10.11.3 as mariadb_builder
-FROM tiredofit/nginx-php-fpm:${UPSTREAM_VERSION}
+FROM nfrastack/nginx-php-fpm:${UPSTREAM_VERSION}
 
 ARG PHP_VERSION
 ENV TIMEZONE=Asia/Shanghai
@@ -43,7 +43,11 @@ ENV S6_STAGE2_HOOK=/docker-mods
 ENV NGINX_FORCE_RESET_PERMISSIONS=FALSE
 ENV PATH=/var/www/html/vendor/bin:/var/www/html/bin:${PATH}
 ENV ENABLE_LSYNCD=FALSE
-ENV NGINX_POST_INIT_SCRIPT=/assets/scripts/nginx-init-post.sh
+ENV NGINX_POST_INIT_SCRIPT=/container/scripts/nginx-init-post.sh
+ENV NGINX_LOG_ACCESS_PATH=/www/logs/nginx
+ENV NGINX_LOG_BLOCKED_PATH=/www/logs/nginx
+ENV NGINX_LOG_ERROR_PATH=/www/logs/nginx
+ENV PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/nginx-php
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -57,13 +61,22 @@ RUN apt-get update && \
         apt-transport-https \
         curl \
         libmariadb3 \
+        ca-certificates \
         openssh-client && \
+    ## Enable PHP extensions (igbinary/msgpack are deps for redis/memcached)
+    php-ext enable igbinary && \
+    php-ext enable msgpack && \
     php-ext enable zip && \
-    apt install -y php$PHP_BASE-yaml openssl && \
+    php-ext enable yaml && \
+    php-ext enable redis && \
+    php-ext enable memcached && \
+    php-ext enable imagick && \
+    php-ext enable ldap && \
+    php-ext enable pdo_pgsql && \
     ## install mariadb client
-    apt remove -y mariadb-client mariadb-client-core && \
-    if [[ "${PHP_VERSION}" < "8.3" ]]; then \
-        curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar | sh && \
+    apt remove -y mariadb-client mariadb-client-core || true && \
+    if [ "$(printf '%s\n' "8.3" "${PHP_VERSION}" | sort -V | head -n1)" != "8.3" ]; then \
+        curl -fsSL -o /usr/local/bin/drush https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar && \
         chmod +x /usr/local/bin/drush && \
         drush core-status; \
     fi; \
@@ -96,16 +109,17 @@ RUN apt-get update && \
         /app \
         /config \
         /defaults \
-        /lsiopy && \
+        /lsiopy \
+        /var/www/html && \
     echo "**** cleanup ****" && \
     rm -rf /tmp/* $HOME/.cache && \
     ## add lsyncd user
     useradd -u 666 -U -d /config -s /bin/bash lsyncd && \
     usermod -G www-data lsyncd && \
-    ## Unblock some bots
-    sed -i '/MQQBrowser/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
-    sed -i '/MicroMessenge/d' /etc/nginx/snippets/blockbots/globalblacklist.conf && \
-    sed -i '/Baidu/d' /etc/nginx/snippets/blockbots/globalblacklist.conf
+    ## Unblock some bots (new image path)
+    sed -i '/MQQBrowser/d' /container/data/nginx/blockbots/globalblacklist.conf && \
+    sed -i '/MicroMessenge/d' /container/data/nginx/blockbots/globalblacklist.conf && \
+    sed -i '/Baidu/d' /container/data/nginx/blockbots/globalblacklist.conf
 COPY --from=mariadb_builder /usr/bin/mariadb* /usr/bin/
 COPY --from=mariadb_builder /usr/bin/mysql* /usr/bin/
 RUN ls -l /usr/bin/mariadb* /usr/bin/mysql* && \
@@ -116,11 +130,13 @@ COPY --from=ghcr.io/linuxserver/openssh-server /etc/s6-overlay/s6-rc.d /etc/s6-o
 COPY --from=ghcr.io/linuxserver/openssh-server /docker-mods /docker-mods
 ## https://github.com/linuxserver/docker-baseimage-alpine/blob/master/Dockerfile#L59
 ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/lsiown.${LSIOWN_VERSION}" "/usr/bin/lsiown"
-RUN sed -i 's/sshd\.pam/sshd/g' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run
-## ADD --chmod=744 "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}" "/docker-mods"
-# ADD conf/nginx/drupal.conf /etc/nginx/sites.available/drupal.conf
-# ADD conf/nginx/laravel.conf /etc/nginx/sites.available/laravel.conf
+RUN sed -i 's/sshd\.pam/sshd/g' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run 2>/dev/null || true && \
+    sed -i '2a # Only start SSH if USER_NAME is set and not empty\nif [ -z "${USER_NAME}" ]; then\n    echo "USER_NAME not set, SSH disabled"\n    exit 0\nfi\n' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run && \
+    mkdir -p /container/state/init && touch /container/state/init/.advanced
 ADD install /
+RUN mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
+    /www/logs/nginx /www/logs/nginx-php && \
+    chmod +x /container/init/init.d/* /container/scripts/*.sh /container/services.available/*/run 2>/dev/null || true
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
 WORKDIR /var/www/html
 EXPOSE 80

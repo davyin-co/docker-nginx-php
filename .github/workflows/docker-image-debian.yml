@@ -20,33 +20,21 @@ jobs:
         array:
           [
             {
-              php_version: "7.4",
-              upstream_version: "7.4-debian-bookworm-7.7.19",
-              tag: "7.4-debian",
-              platforms: "linux/amd64"
-            },
-            {
-              php_version: "8.1",
-              upstream_version: "8.1-debian-bookworm-7.7.20",
-              tag: "8.1-debian",
-              platforms: "linux/amd64,linux/arm64"
-            },
-            {
-              php_version: "8.2",
-              upstream_version: "8.2-debian-bookworm-7.7.20",
-              tag: "8.2-debian",
-              platforms: "linux/amd64,linux/arm64"
-            },
-            {
               php_version: "8.3",
-              upstream_version: "8.3-debian-bookworm-7.7.20",
+              upstream_version: "8.3-debian_bookworm",
               tag: "8.3-debian",
               platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-debian-bookworm-7.7.20",
+              upstream_version: "8.4-debian_bookworm",
               tag: "8.4-debian",
+              platforms: "linux/amd64,linux/arm64"
+            },
+            {
+              php_version: "8.5",
+              upstream_version: "8.5-debian_trixie",
+              tag: "8.5-debian",
               platforms: "linux/amd64,linux/arm64"
             }
           ]

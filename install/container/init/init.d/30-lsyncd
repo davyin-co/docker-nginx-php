@@ -1,0 +1,19 @@
+#!/command/with-contenv bash
+
+source /container/base/functions/container/init
+prepare_service 30-lsyncd single
+SERVICE_NAME="lsyncd"
+
+if check_container_restarted; then
+    if var_true "${ENABLE_LSYNCD}" ; then
+        if [ -n "$LSYNCD_TARGET_RSYNCD_PASSWORD" ]; then
+            echo "$LSYNCD_TARGET_RSYNCD_PASSWORD" > /config/rsyncd.secrets
+            chmod 0400 /config/rsyncd.secrets
+        fi
+        print_notice "Enabling Lsyncd for file sync"
+    else
+        service_stop 30-lsyncd
+    fi
+fi
+
+liftoff

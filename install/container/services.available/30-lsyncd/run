@@ -1,0 +1,7 @@
+#!/command/with-contenv bash
+
+source /container/base/functions/container/init
+PROCESS_NAME="lsyncd"
+
+print_start "Starting lsyncd"
+exec s6-setuidgid root lsyncd -nodaemon -insist /config/lsyncd.lua

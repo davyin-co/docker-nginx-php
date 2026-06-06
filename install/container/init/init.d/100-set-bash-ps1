@@ -1,0 +1,16 @@
+#!/command/with-contenv bash
+
+source /container/base/functions/container/init
+prepare_service single
+
+if check_container_restarted; then
+    export PS1='${debian_chroot:+($debian_chroot)}\[\033[01;31m\]\u\[\033[00m\]@\h: \[\033[01;36m\]\w\[\033[00m\] \[\t\]\n\$ '
+    echo "export PS1='$PS1'" >> /root/.bashrc
+
+    if [ -n "$USER_NAME" ]; then
+        print_notice "Changing default shell for $USER_NAME to /bin/bash"
+        chsh -s /bin/bash $USER_NAME 2>/dev/null || true
+    fi
+fi
+
+liftoff
