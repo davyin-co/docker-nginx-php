@@ -47,6 +47,7 @@ ENV NGINX_LOG_ACCESS_PATH=/www/logs/nginx
 ENV NGINX_LOG_BLOCKED_PATH=/www/logs/nginx
 ENV NGINX_LOG_ERROR_PATH=/www/logs/nginx
 ENV PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/nginx-php
+ENV USER_NAME=dsf
 
 RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client ca-certificates && \
     ## Enable PHP extensions (igbinary/msgpack are deps for redis/memcached)

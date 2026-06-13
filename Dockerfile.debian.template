@@ -48,6 +48,7 @@ ENV NGINX_LOG_ACCESS_PATH=/www/logs/nginx
 ENV NGINX_LOG_BLOCKED_PATH=/www/logs/nginx
 ENV NGINX_LOG_ERROR_PATH=/www/logs/nginx
 ENV PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/nginx-php
+ENV USER_NAME=dsf
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
