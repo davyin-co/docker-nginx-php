@@ -137,4 +137,13 @@ if var_true "${DRUPAL_FILES_PERM_FIXED}"; then
     fi
 fi
 
+# --- Remove base image's auto-generated files that conflict with our drupal.conf ---
+# nfrastack base image's 10-nginx init populates sites.enabled/drupal/server-begin/
+# with config snippets. The 10-http.conf (listen 80) and 20-webroot.conf (root)
+# would duplicate directives already in drupal.conf, causing nginx [emerg] errors.
+# We delete them so our drupal.conf is the single source of truth for these.
+rm -f /etc/nginx/sites.enabled/drupal/server-begin/10-http.conf
+rm -f /etc/nginx/sites.enabled/drupal/server-begin/20-webroot.conf
+print_debug "Removed conflicting base-image server-begin snippets"
+
 liftoff
