@@ -46,7 +46,7 @@ ENV NGINX_POST_INIT_SCRIPT=/container/scripts/nginx-init-post.sh
 ENV NGINX_LOG_ACCESS_PATH=/www/logs/nginx
 ENV NGINX_LOG_BLOCKED_PATH=/www/logs/nginx
 ENV NGINX_LOG_ERROR_PATH=/www/logs/nginx
-ENV PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/nginx-php
+ENV PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/php
 ENV USER_NAME=dsf
 
 RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client ca-certificates && \
@@ -118,7 +118,7 @@ RUN sed -i 's|/usr/sbin/sshd |/usr/sbin/sshd.pam |g' /etc/s6-overlay/s6-rc.d/svc
     mkdir -p /container/state/init && touch /container/state/init/.advanced
 ADD install /
 RUN mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
-    /www/logs/nginx /www/logs/nginx-php && \
+    /www/logs/nginx /www/logs/php && \
     chmod +x /container/init/init.d/* /container/scripts/*.sh /container/services.available/*/run 2>/dev/null || true
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
 WORKDIR /var/www/html
