@@ -1,0 +1,19 @@
+#!/command/with-contenv bash
+#
+# Default permission-reset switches to FALSE at container startup.
+# The upstream nfrastack/container-nginx image defaults
+# NGINX_FORCE_RESET_PERMISSIONS to TRUE and recursively chowns the
+# webroot to nginx:www-data. This script ensures the default is FALSE
+# unless the operator explicitly sets it to TRUE.
+
+source /container/base/functions/container/init
+
+if [ -z "${NGINX_FORCE_RESET_PERMISSIONS}" ]; then
+    export NGINX_FORCE_RESET_PERMISSIONS=FALSE
+    if [ -d /var/run/s6/basedir/env ]; then
+        printf '%s' "FALSE" > /var/run/s6/basedir/env/NGINX_FORCE_RESET_PERMISSIONS
+    fi
+    print_notice "Defaulted NGINX_FORCE_RESET_PERMISSIONS to FALSE"
+fi
+
+liftoff

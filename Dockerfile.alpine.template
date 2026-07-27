@@ -30,6 +30,9 @@ ENV PHP_FPM_MAX_CHILDREN=300
 ENV PHP_FPM_START_SERVERS=10
 ENV PHP_FPM_MIN_SPARE_SERVERS=5
 ENV PHP_FPM_MAX_SPARE_SERVERS=30
+# Disable PHP JIT: PHP 8.3 tracing JIT on Alpine/musl triggers FPM worker SIGSEGV
+# with Drupal, causing nginx 502 Bad Gateway. Stable without JIT.
+ENV PHP_MODULE_OPCACHE_JIT_MODE=0
 ENV PHP_ENABLE_CREATE_SAMPLE_PHP=FALSE
 ENV NGINX_ENABLE_COMPRESSION_BROTLI=FALSE
 ENV HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;"
@@ -117,9 +120,10 @@ RUN sed -i 's|/usr/sbin/sshd |/usr/sbin/sshd.pam |g' /etc/s6-overlay/s6-rc.d/svc
     sed -i '2a # Only start SSH if USER_NAME is set and not empty\nif [ -z "${USER_NAME}" ]; then\n    echo "USER_NAME not set, SSH disabled"\n    exit 0\nfi\n' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run && \
     mkdir -p /container/state/init && touch /container/state/init/.advanced
 ADD install /
-RUN mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
+RUN python3 /container/scripts/patch-nginx-functions.py && \
+    mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
     /www/logs/nginx /www/logs/php && \
-    chmod +x /container/init/init.d/* /container/scripts/*.sh /container/services.available/*/run 2>/dev/null || true
+    chmod +x /container/init/init.d/* /container/scripts/*.sh /container/scripts/*.py /container/services.available/*/run 2>/dev/null || true
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
 WORKDIR /var/www/html
 EXPOSE 80
