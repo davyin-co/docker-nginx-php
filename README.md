@@ -79,7 +79,7 @@ services:
       - DRUPAL_WEB_ROOT=web
       - USER_NAME=admin  # Optional: enables SSH
       - PHP_MEMORY_LIMIT=1024M
-      - PHP_FPM_MAX_CHILDREN=300
+      - PHP_FPM_MAX_CHILDREN=40
       - NGINX_LOG_ACCESS_PATH=/www/logs/nginx
       - NGINX_LOG_ERROR_PATH=/www/logs/nginx
       - PHPFPM_POOL_DEFAULT_LOG_PATH=/www/logs/nginx-php
@@ -102,10 +102,10 @@ services:
 | `PHP_MEMORY_LIMIT` | PHP memory limit | `1024M` |
 | `PHP_UPLOAD_MAX_SIZE` | Max upload file size | `512M` |
 | `PHP_FPM_PM` | Process manager type (`static`, `dynamic`, `ondemand`) | `dynamic` |
-| `PHP_FPM_MAX_CHILDREN` | Max child processes | `300` |
-| `PHP_FPM_START_SERVERS` | Initial server count (dynamic mode) | `10` |
-| `PHP_FPM_MIN_SPARE_SERVERS` | Min spare servers (dynamic mode) | `5` |
-| `PHP_FPM_MAX_SPARE_SERVERS` | Max spare servers (dynamic mode) | `30` |
+| `PHP_FPM_MAX_CHILDREN` | Max child processes | `40` |
+| `PHP_FPM_START_SERVERS` | Initial server count (dynamic mode) | `4` |
+| `PHP_FPM_MIN_SPARE_SERVERS` | Min spare servers (dynamic mode) | `2` |
+| `PHP_FPM_MAX_SPARE_SERVERS` | Max spare servers (dynamic mode) | `8` |
 | `PHP_FPM_STATUS_ENABLE` | Enable `/status` endpoint | `false` |
 | `TIMEOUT` | Request timeout (nginx + PHP) | `30` |
 | `PHP_LOG_LEVEL` | PHP-FPM log level | `error` |

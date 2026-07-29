@@ -21,7 +21,7 @@ services:
 
       # PHP configuration
       - PHP_MEMORY_LIMIT=1024M
-      - PHP_FPM_MAX_CHILDREN=300
+      - PHP_FPM_MAX_CHILDREN=40
 
       # Optional: Enable SSH access
       # - USER_NAME=admin
