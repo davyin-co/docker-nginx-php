@@ -71,6 +71,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: "Dockerfile.alpine.template"
           tags: davyinsa/docker-nginx-php:${{ matrix.array.tag }},registry.cn-hangzhou.aliyuncs.com/davyin/nginx-php:${{ matrix.array.tag }}
+          provenance: false
+          sbom: false
           build-args: |
             PHP_VERSION=${{ matrix.array.php_version }}
             UPSTREAM_VERSION=${{ matrix.array.upstream_version }}
