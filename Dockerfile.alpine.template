@@ -122,8 +122,8 @@ RUN sed -i 's|/usr/sbin/sshd |/usr/sbin/sshd.pam |g' /etc/s6-overlay/s6-rc.d/svc
     sed -i '2a # Only start SSH if USER_NAME is set and not empty\nif [ -z "${USER_NAME}" ]; then\n    echo "USER_NAME not set, SSH disabled"\n    exit 0\nfi\n' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run && \
     mkdir -p /container/state/init && touch /container/state/init/.advanced
 ADD install /
-RUN python3 /container/scripts/patch-nginx-functions.py && \
-    mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
+RUN python3 /container/scripts/patch-nginx-functions.py
+RUN mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
     /www/logs/nginx /www/logs/php && \
     chmod +x /container/init/init.d/* /container/scripts/*.sh /container/scripts/*.py /container/services.available/*/run 2>/dev/null || true
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s CMD curl -f http://localhost/user/login || exit 1
