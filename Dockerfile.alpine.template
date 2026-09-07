@@ -86,7 +86,8 @@ RUN apk add --no-cache zip patch findutils rsync lsyncd openssh-client ca-certif
         coreutils \
         shadow \
         netcat-openbsd \
-        sudo && \
+        sudo \
+        python3 && \
     echo "**** install openssh-server ****" && \
     apk add --no-cache \
         openssh-client \
