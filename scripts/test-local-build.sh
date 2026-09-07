@@ -13,6 +13,7 @@
 #   PLATFORM     build/run platform      (default: linux/amd64)
 #   DRUPAL_IMAGE image to copy code from (default: drupal:11-apache)
 #   PORT         host port for test      (default: 8080)
+#   WAIT_SECONDS max wait for install page (default: 240; raise for cross-arch)
 #
 # The test copies a fresh Drupal codebase out of the official drupal image,
 # mounts it into the freshly built image and verifies that nginx + php-fpm
@@ -28,6 +29,7 @@ UPSTREAM_VERSION="${3:-}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 DRUPAL_IMAGE="${DRUPAL_IMAGE:-drupal:11-apache}"
 PORT="${PORT:-8080}"
+WAIT_SECONDS="${WAIT_SECONDS:-240}"
 
 if [ -z "$UPSTREAM_VERSION" ]; then
     case "$VARIANT" in
@@ -79,10 +81,10 @@ docker run -d --name "$NAME" \
     -v "$TMPDIR/html:/var/www/html" \
     "$TAG" >/dev/null
 
-echo "==> [4/4] Waiting for Drupal installer page (up to 240s)"
+echo "==> [4/4] Waiting for Drupal installer page (up to ${WAIT_SECONDS}s)"
 url="http://localhost:${PORT}/core/install.php"
 ok=""
-for _ in $(seq 1 80); do
+for _ in $(seq 1 $((WAIT_SECONDS / 3))); do
     if curl -sfL -o /dev/null -w '%{http_code}' "$url" 2>/dev/null | grep -q '^200$'; then
         ok=1
         break

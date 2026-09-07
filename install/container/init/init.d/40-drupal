@@ -127,6 +127,21 @@ EOF
     done
 fi
 
+# --- PHP pool upstream wiring ---
+# drupal.conf ships with 'fastcgi_pass phpfpm-www-upstream' hardcoded, but the
+# base image only generates an upstream block for pools actually in use.
+# Respect the base image's pool routing chain so nginx does not fail with
+# 'no port in upstream' when a non-default pool is selected:
+#   1. NGINX_SITE_<SITENAME>_PHP_UPSTREAM (per-site, highest priority)
+#   2. NGINX_PHP_UPSTREAM (global default)
+#   3. www (hardcoded fallback)
+POOL_UPSTREAM="${NGINX_SITE_DRUPAL_PHP_UPSTREAM:-${NGINX_PHP_UPSTREAM:-www}}"
+POOL_UPSTREAM="$(echo "${POOL_UPSTREAM}" | tr '[:upper:]' '[:lower:]')"
+if grep -q "fastcgi_pass phpfpm-[a-z0-9_-]*-upstream;" "$DRUPAL_CONF" 2>/dev/null; then
+    sed -i "s#fastcgi_pass phpfpm-[a-z0-9_-]*-upstream;#fastcgi_pass phpfpm-${POOL_UPSTREAM}-upstream;#g" "$DRUPAL_CONF"
+    print_debug "[drupal] Wired fastcgi_pass to pool '${POOL_UPSTREAM}'"
+fi
+
 # --- Drupal files permission fix ---
 if var_true "${DRUPAL_FILES_PERM_FIXED}"; then
     print_notice "Starting Drupal files permission fix"
