@@ -1,0 +1,59 @@
+#!/command/with-contenv bash
+#
+# PHP-FPM pool pm.* override for the default www pool
+#
+# Background: nfrastack gates pm.* process-manager settings for the DEFAULT
+# pool behind its paid "Advanced" functionality — PHPFPM_POOL_DEFAULT_MAX_CHILDREN
+# and the legacy PHP_FPM_MAX_CHILDREN alias are silently reset to upstream
+# defaults during init (verified empirically on 8.4-alpine_3.24).
+#
+# This script re-applies the image's own PHP_FPM_* environment variables by
+# editing the generated pool config after the upstream 20-php-fpm init has
+# run. It only touches values the operator explicitly sets; unset variables
+# are left at whatever upstream generated.
+#
+# NOTE: custom pools defined via PHPFPM_POOL_<NAME>_LISTEN_TYPE are NOT
+# affected by the Advanced gate — their pm.* variables work natively. This
+# script only fixes the default www pool.
+
+source /container/base/functions/container/init
+prepare_service single
+SERVICE_NAME="php-fpm-pool"
+
+# --- Detect PHP paths (same pattern as 40-drupal) ---
+PHP_DIR=$(ls -d /etc/php[0-9]* 2>/dev/null | head -1)
+if [ -n "$PHP_DIR" ]; then
+    # Alpine: /etc/php84/pools.d/www/www-pm.conf
+    PM_CONF="${PHP_DIR}/pools.d/www/www-pm.conf"
+elif [ -d /etc/php ]; then
+    # Debian: /etc/php/8.4/fpm/pools.d/www/www-pm.conf
+    PHP_DIR=$(find /etc/php -maxdepth 1 -mindepth 1 -type d | head -1)
+    PM_CONF="${PHP_DIR}/fpm/pools.d/www/www-pm.conf"
+fi
+
+if [ -z "${PM_CONF}" ] || [ ! -f "${PM_CONF}" ]; then
+    print_debug "[php-fpm-pool] No default pool pm config found at '${PM_CONF}', skipping"
+    liftoff
+fi
+
+# set_pm <directive-suffix> <value>: update or append a pm directive
+set_pm() {
+    local key="$1"
+    local val="$2"
+    [ -z "${val}" ] && return 0
+    if grep -q "^${key}[[:space:]]*=" "${PM_CONF}"; then
+        sed -i "s#^${key}[[:space:]]*=.*#${key}                              = ${val}#g" "${PM_CONF}"
+    else
+        echo "${key}                              = ${val}" >> "${PM_CONF}"
+    fi
+    print_debug "[php-fpm-pool] Set ${key} = ${val} in ${PM_CONF}"
+}
+
+set_pm "pm" "${PHP_FPM_PM}"
+set_pm "pm.max_children" "${PHP_FPM_MAX_CHILDREN}"
+set_pm "pm.start_servers" "${PHP_FPM_START_SERVERS}"
+set_pm "pm.min_spare_servers" "${PHP_FPM_MIN_SPARE_SERVERS}"
+set_pm "pm.max_spare_servers" "${PHP_FPM_MAX_SPARE_SERVERS}"
+set_pm "pm.max_requests" "${PHP_FPM_MAX_REQUESTS}"
+
+liftoff

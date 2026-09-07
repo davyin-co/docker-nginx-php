@@ -106,9 +106,31 @@ services:
 | `PHP_FPM_START_SERVERS` | Initial server count (dynamic mode) | `4` |
 | `PHP_FPM_MIN_SPARE_SERVERS` | Min spare servers (dynamic mode) | `2` |
 | `PHP_FPM_MAX_SPARE_SERVERS` | Max spare servers (dynamic mode) | `8` |
+| `PHP_FPM_MAX_REQUESTS` | Max requests per child before respawn | (upstream default `0`) |
 | `PHP_FPM_STATUS_ENABLE` | Enable `/status` endpoint | `false` |
 | `TIMEOUT` | Request timeout (nginx + PHP) | `30` |
 | `PHP_LOG_LEVEL` | PHP-FPM log level | `error` |
+
+> **Note on PHP-FPM pool tuning**: The upstream nfrastack image gates `pm.*`
+> settings of the **default pool** behind its paid "Advanced" functionality —
+> `PHPFPM_POOL_DEFAULT_MAX_CHILDREN` and similar variables are silently reset
+> to upstream defaults. The `PHP_FPM_*` variables above are applied by this
+> image's own init (`45-php-fpm-pool`) and are the supported way to tune the
+> default pool. Custom pools defined via `PHPFPM_POOL_<NAME>_LISTEN_TYPE` are
+> NOT affected by the gate — their `PHPFPM_POOL_<NAME>_*` variables work as
+> documented upstream. As an alternative for full pool control, mount override
+> files into the container (note the **uppercase** pool directory, an upstream
+> quirk):
+>
+> ```yaml
+> volumes:
+>   - ./pool-override:/override/php-fpm/pool/WWW:ro   # WWW must be uppercase
+> ```
+> ```ini
+> ; pool-override/zz-custom.conf
+> [www]
+> pm.max_children = 32
+> ```
 
 ### Nginx Configuration
 | Variable | Description | Default |

@@ -139,6 +139,14 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
 镜像中若存在该目录（如构建时 `touch /container/state/init/.advanced`），容器首次启动会被
 误判为 warm restart，初始化配置被跳过，导致 nginx 无 server.conf、php-fpm 无 pool 配置。
 
+### PHP-FPM pool pm.* 参数被上游 Advanced 锁定
+上游把默认 pool 的 `pm.*` 进程管理参数（MAX_CHILDREN/START/MIN/MAX_SPARE 等）
+圈入付费 Advanced 功能：对应环境变量在初始化时被**静默重置为默认值**，
+不报错、不记录。已验证 `PHPFPM_POOL_DEFAULT_*` 和旧版 `PHP_FPM_*` 别名都无效。
+- 本镜像用自有 init `45-php-fpm-pool` 改写生成的 pool 配置，使 `PHP_FPM_*` 变量生效
+- 自定义 pool（`PHPFPM_POOL_<NAME>_LISTEN_TYPE` 定义）不受锁定，其 pm 参数原生可用
+- 备选方案：挂载 `/override/php-fpm/pool/WWW/`（目录名必须大写，上游大小写 bug）
+
 ## Common Tasks
 
 ### Adding a new PHP version
