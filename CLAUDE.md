@@ -91,6 +91,13 @@ Enabled at build time via `php-ext enable` command:
 
 ## Testing
 
+### 冒烟测试（推荐，提交前必跑）
+```bash
+./scripts/test-local-build.sh [PHP_VERSION] [VARIANT] [UPSTREAM_VERSION]
+```
+构建镜像 → 从官方 drupal 镜像提取代码 → 启动容器 → 验证 Drupal 安装页返回 HTTP 200。
+详见 `scripts/test-local-build.sh` 头部注释。
+
 ### Quick test
 ```bash
 docker run -d --name test \
@@ -108,6 +115,29 @@ docker run -d --name test-ssh \
   your-image-name:tag
 ssh -p 2222 admin@localhost
 ```
+
+## Pre-push Requirement (提交推送前必须本地测试)
+
+任何修改 `Dockerfile.*.template`、`install/`、`.github/workflows/` 或 CI 构建矩阵的提交，在 **commit 并 push 之前** 必须完成本地构建并通过 Drupal 冒烟测试：
+
+```bash
+./scripts/test-local-build.sh 8.4 alpine        # 必测
+./scripts/test-local-build.sh 8.4 debian        # 改动影响 Debian 变体时必测
+./scripts/test-local-build.sh 8.3 alpine        # 涉及 PHP 版本相关逻辑时补测
+```
+
+测试脚本会用官方 `drupal:11-apache` 镜像提取 Drupal 代码，挂载到新构建的镜像中运行，
+并验证 nginx + php-fpm 能正常输出 Drupal 安装页面（HTTP 200）。未通过测试的代码不得推送。
+
+CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不验证容器运行时）。
+历史教训：Alpine 3.24 升级曾引入运行时故障（见下方"容器状态目录"），CI 全绿但镜像无法启动。
+
+## Critical Runtime Gotchas
+
+### 不要在镜像中创建 /container/state 下的任何文件
+基础镜像的 `/etc/cont-init.d/0-container` 靠 `/container/state` **不存在** 来判断首次启动。
+镜像中若存在该目录（如构建时 `touch /container/state/init/.advanced`），容器首次启动会被
+误判为 warm restart，初始化配置被跳过，导致 nginx 无 server.conf、php-fpm 无 pool 配置。
 
 ## Common Tasks
 
