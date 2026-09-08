@@ -8,9 +8,10 @@ ARG PHP_VERSION
 ENV TIMEZONE=Asia/Shanghai
 ENV VIRTUAL_PORT=80
 ENV NGINX_WEBROOT=/var/www/html
-ENV CONTAINER_PROCESS_RUNAWAY_LIMIT=5
-ENV LOGROTATE_COMPRESSION_TYPE=NONE
-ENV LOGROTATE_RETAIN_DAYS=60
+# Note: logrotate retention/compression and the runaway limit are baked into
+# the upstream base defaults via sed below — declaring them as ENV here would
+# conflict with the Advanced-gated upstream defaults and trigger the nfrastack
+# "variables not being processed" nag on every container start.
 #ENV PHP_WEBROOT=docroot
 ENV DRUSH_VERSION=8.4.12
 ENV COLUMNS=0
@@ -141,6 +142,10 @@ RUN sed -i 's/sshd\.pam/sshd/g' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run 2
     sed -i '2a # Only start SSH if USER_NAME is set and not empty\nif [ -z "${USER_NAME}" ]; then\n    echo "USER_NAME not set, SSH disabled"\n    exit 0\nfi\n' /etc/s6-overlay/s6-rc.d/svc-openssh-server/run
 ADD install /
 RUN python3 /container/scripts/patch-nginx-functions.py
+# Bake our preferred defaults into the upstream base defaults (these vars are
+# Advanced-gated; setting them as ENV would only trigger the override nag)
+RUN sed -i 's|set_env LOGROTATE_RETAIN_DAYS="3"|set_env LOGROTATE_RETAIN_DAYS="60"|' /container/base/defaults/logging/_logrotate/logrotate && \
+    sed -i 's|LOGROTATE_COMPRESSION_TYPE="zstd"|LOGROTATE_COMPRESSION_TYPE="none"|' /container/base/defaults/logging/_logrotate/logrotate
 RUN mkdir -p /etc/nginx/sites.enabled /etc/nginx/vhost.d /etc/nginx/extra \
     /www/logs/nginx /www/logs/nginx-php && \
     chmod +x /container/init/init.d/* /container/scripts/*.sh /container/scripts/*.py /container/services.available/*/run 2>/dev/null || true
