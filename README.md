@@ -142,6 +142,15 @@ services:
 | `NGINX_ENABLE_COMPRESSION_BROTLI` | Enable Brotli compression | `FALSE` |
 | `NGINX_ENABLE_OPEN_FILE_CACHE` | Enable open file cache | `FALSE` |
 | `MAX_FILE_UPLOAD_SIZE` | Max upload size (affects nginx + PHP) | `32M` |
+| `NGINX_WORKER_PROCESSES` | Nginx worker processes (number or `auto`) | `1` |
+| `NGINX_WORKER_RLIMIT_NOFILE` | File descriptor limit per worker | `100000` |
+
+> **Note on worker settings**: Upstream ships the `server-worker.template` but
+> never renders it into the generated nginx config, so `NGINX_WORKER_PROCESSES`
+> is silently ignored (nginx always falls back to 1 worker). Additionally,
+> `NGINX_WORKER_RLIMIT_NOFILE` is gated behind the paid "Advanced"
+> functionality. Both variables are applied by this image's own init
+> (`44-nginx-worker`).
 
 ### Security Headers
 | Variable | Description | Default |

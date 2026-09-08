@@ -147,6 +147,14 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
 - 自定义 pool（`PHPFPM_POOL_<NAME>_LISTEN_TYPE` 定义）不受锁定，其 pm 参数原生可用
 - 备选方案：挂载 `/override/php-fpm/pool/WWW/`（目录名必须大写，上游大小写 bug）
 
+### NGINX_WORKER_* 变量上游不生效
+- `NGINX_WORKER_PROCESSES`：上游定义了变量、也带了 `server-worker.template`，
+  但 `10-nginx` 函数里**没有调用 render_template**，生成的 server.conf 永远
+  没有 `worker_processes` 指令（nginx 回退到编译默认值 1）。属上游接线遗漏，非 Advanced 锁定。
+- `NGINX_WORKER_RLIMIT_NOFILE`：文档有，但被 Advanced 锁定（静默重置为 100000）。
+- 本镜像用自有 init `44-nginx-worker` 把两个指令写进 `server.conf.d/worker.conf`
+  （server.conf 在 main context include 该目录，重启安全，上游不清理非自有文件）。
+
 ## Common Tasks
 
 ### Adding a new PHP version
