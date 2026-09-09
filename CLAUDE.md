@@ -80,9 +80,11 @@ docker build -f Dockerfile.debian.template \
 - 站点配置: `/etc/nginx/conf.d/default.conf`
 
 ### PHP Extensions
-构建时用 `install-php-extensions`（mlocati 工具）安装：
-igbinary, msgpack, memcached, imagick, ldap, yaml, bz2
-（基础镜像已含 redis, zip, pdo_pgsql, pdo_mysql, sodium, opcache 等）
+构建时用 `install-php-extensions`（mlocati 工具）安装 15 个：
+igbinary, msgpack, memcached, imagick, ldap, yaml, bz2,
+apcu, bcmath, exif, gd, imap, intl, mysqli, pgsql
+（与 nfrastack 时代对齐；基础镜像已含 redis, zip, pdo_mysql, pdo_pgsql,
+sodium, opcache 等。冒烟脚本会逐项校验全部 19 个扩展）
 
 ### SSH Server
 - `USER_NAME` 设置时启用（默认 ENV `USER_NAME=dsf`），监听 2222

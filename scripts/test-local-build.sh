@@ -52,14 +52,32 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "==> [1/4] Building ${TAG} (${DOCKERFILE}, ${PLATFORM}, upstream ${UPSTREAM_VERSION})"
+echo "==> [1/5] Building ${TAG} (${DOCKERFILE}, ${PLATFORM}, upstream ${UPSTREAM_VERSION})"
 docker build -f "$DOCKERFILE" \
     --platform "$PLATFORM" \
     --build-arg PHP_VERSION="$PHP_VERSION" \
     --build-arg UPSTREAM_VERSION="$UPSTREAM_VERSION" \
     -t "$TAG" .
 
-echo "==> [2/4] Copying Drupal codebase from ${DRUPAL_IMAGE}"
+echo "==> [2/5] Verifying PHP extensions in ${TAG}"
+# Full list expected by production Drupal sites (parity with the nfrastack-era
+# image): the 15 installed via install-php-extensions in the Dockerfiles plus
+# redis/zip/pdo_mysql/pdo_pgsql provided by the serversideup base.
+REQUIRED_EXTS="apcu bcmath bz2 exif gd igbinary imagick imap intl ldap \
+memcached msgpack mysqli pdo_mysql pdo_pgsql pgsql redis yaml zip"
+# Query php -m once (not per extension): repeated docker run invocations are
+# slow and can fail transiently under daemon load.
+PHP_MODULES="$(docker run --rm --platform "$PLATFORM" --entrypoint php "$TAG" -m 2>/dev/null)"
+missing=""
+for ext in $REQUIRED_EXTS; do
+    echo "$PHP_MODULES" | grep -qix "$ext" || missing="$missing $ext"
+done
+if [ -n "$missing" ]; then
+    echo "FAIL: ${TAG} missing PHP extensions:${missing}" >&2
+    exit 1
+fi
+
+echo "==> [3/5] Copying Drupal codebase from ${DRUPAL_IMAGE}"
 docker pull -q "$DRUPAL_IMAGE" >/dev/null
 docker create --name "$SRC_CONTAINER" "$DRUPAL_IMAGE" >/dev/null
 mkdir -p "$TMPDIR/html"
@@ -72,7 +90,7 @@ docker rm -f "$SRC_CONTAINER" >/dev/null
 SRC_CONTAINER=""
 [ -f "$TMPDIR/html/web/index.php" ] || { echo "ERROR: no web/index.php in drupal image code" >&2; exit 1; }
 
-echo "==> [3/4] Starting test container ${NAME} on port ${PORT}"
+echo "==> [4/5] Starting test container ${NAME} on port ${PORT}"
 docker run -d --name "$NAME" \
     --platform "$PLATFORM" \
     -p "${PORT}:80" \
@@ -80,7 +98,7 @@ docker run -d --name "$NAME" \
     -v "$TMPDIR/html:/var/www/html" \
     "$TAG" >/dev/null
 
-echo "==> [4/4] Waiting for Drupal installer page (up to ${WAIT_SECONDS}s)"
+echo "==> [5/5] Waiting for Drupal installer page (up to ${WAIT_SECONDS}s)"
 url="http://localhost:${PORT}/core/install.php"
 ok=""
 for _ in $(seq 1 $((WAIT_SECONDS / 3))); do

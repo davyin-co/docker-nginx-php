@@ -87,11 +87,20 @@ RUN for i in 1 2 3; do \
             imagick \
             ldap \
             yaml \
-            bz2 && break || { echo "install-php-extensions failed, retry $i/3"; sleep 10; }; \
+            bz2 \
+            apcu \
+            bcmath \
+            exif \
+            gd \
+            imap \
+            intl \
+            mysqli \
+            pgsql && break || { echo "install-php-extensions failed, retry $i/3"; sleep 10; }; \
     done && \
     ## Fail loudly if any extension did not actually get enabled
     ## (install-php-extensions can exit 0 even when a download failed)
-    for ext in igbinary msgpack memcached imagick ldap yaml bz2; do \
+    for ext in igbinary msgpack memcached imagick ldap yaml bz2 \
+               apcu bcmath exif gd imap intl mysqli pgsql; do \
         php -m | grep -qix "$ext" || { echo "ERROR: PHP extension '$ext' missing after install"; exit 1; }; \
     done
 
