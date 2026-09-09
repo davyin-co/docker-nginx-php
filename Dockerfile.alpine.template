@@ -108,6 +108,12 @@ RUN mkdir -p /etc/ssh/sshd_config.d && \
         sed -i '1i Include /etc/ssh/sshd_config.d/*.conf' /etc/ssh/sshd_config && \
     mkdir -p /www/logs/nginx /www/logs/php
 
+## Run nginx workers as nginx(80):www-data(82), matching the nfrastack-era
+## identity so ownership of host-mounted logs/sites stays consistent.
+## uid 80 is free in the base image and no files are owned by the old
+## nginx uid (100), so a plain usermod is sufficient.
+RUN usermod -u 80 -g www-data nginx
+
 ADD install /
 
 RUN chmod +x /etc/entrypoint.d/*-davyin-*.sh \

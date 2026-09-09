@@ -110,11 +110,19 @@ RUN mkdir -p /etc/ssh/sshd_config.d && \
         sed -i '1i Include /etc/ssh/sshd_config.d/*.conf' /etc/ssh/sshd_config && \
     mkdir -p /www/logs/nginx /www/logs/php
 
+## Run nginx workers as nginx(80):www-data(33 on Debian), matching the
+## nfrastack-era alpine identity (80:82) as closely as Debian conventions
+## allow. uid 80 is free and no files are owned by the old nginx uid (997).
+RUN usermod -u 80 -g www-data nginx
+
 ADD install /
 
 RUN chmod +x /etc/entrypoint.d/*-davyin-*.sh \
         /etc/s6-overlay/s6-rc.d/davyin-*/run \
-        /usr/local/sbin/davyin-*
+        /usr/local/sbin/davyin-* && \
+    ## Debian's bashrc has no /etc/bash/*.sh hook like Alpine's; source our
+    ## PS1 snippet explicitly for interactive non-login shells
+    echo '[ -r /etc/bash/ps1.sh ] && . /etc/bash/ps1.sh' >> /etc/bash.bashrc
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost/user/login || exit 1

@@ -42,6 +42,8 @@ docker build -f Dockerfile.debian.template \
   - nginx.conf 由 `10-init-webserver-config.sh` 从 `nginx.conf.template` envsubst 渲染；
     `/etc/nginx/conf.d/default.conf` 若已存在（本镜像自带 Drupal 配置）则保留不覆盖
   - s6 服务 envdir 是 `/run/s6/container_environment`（注意是下划线）
+  - nginx worker 以 **nginx(80):www-data(82)** 运行（Dockerfile `usermod -u 80 -g www-data nginx`，
+    对齐 nfrastack 时代属主，保证宿主机挂载日志/站点属主一致；Debian 变体为 80:33）
 
 ### Init System（s6-overlay 标准结构）
 - `/etc/entrypoint.d/*.sh` 按数字序执行（每个在子 shell 中 source，**export 不会跨脚本传递**），
@@ -66,6 +68,10 @@ docker build -f Dockerfile.debian.template \
 - `install/etc/nginx/vhost.d/` → 用户自定义 pre-/post-*.conf 扩展点
 - `install/etc/s6-overlay/s6-rc.d/` → 自有服务定义 + user/contents.d 注册
 - `install/etc/ssh/sshd_config.d/00-davyin.conf` → SSH 配置（Port 2222 等）
+- `install/etc/profile.d/pathenv.sh` → 登录 shell 的 PATH + PS1（红 user/青 cwd 双行提示符）
+- `install/etc/bash/ps1.sh` → 非登录交互 bash 的 PS1
+  （Alpine 由 /etc/bash/bashrc 的 `*.sh` 循环自动加载；Debian 由 Dockerfile 向
+  /etc/bash.bashrc 追加 source 行）
 
 ### PHP / Nginx 配置路径（Alpine 与 Debian 一致）
 - php.ini: `/usr/local/etc/php/conf.d/serversideup-docker-php.ini`（含 ${VAR} 占位符）
