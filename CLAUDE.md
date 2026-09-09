@@ -105,6 +105,14 @@ GitHub Actions workflows in `.github/workflows/`:
 
 Triggers: push to main, weekly cron, manual dispatch.
 Builds and pushes to Docker Hub and Aliyun Container Registry.
+
+构建结构（2026-09 起）：每个 PHP 版本 × 架构一条 build leg，**arm64 在原生
+`ubuntu-24.04-arm` runner 上构建**（公共仓库免费，避免 QEMU 模拟编译扩展，
+快 10 倍以上），单架构镜像先推 `{tag}-amd64`/`{tag}-arm64` 中间 tag，
+再由 merge job 用 `imagetools create` 合成多架构 manifest 打正式 tag。
+另有 `type=gha` 层缓存（scope = tag+arch）。
+注意：registry 上的 `-amd64`/`-arm64` 中间 tag 是构建产物，勿删错正式 tag。
+
 基础镜像用浮动 tag（周更带安全补丁）；生产环境建议钉 `-v{serversideup版本}` tag。
 
 ## Testing
