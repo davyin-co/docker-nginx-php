@@ -35,6 +35,8 @@ ENV TIMEZONE=Asia/Shanghai \
     PHP_FPM_PM_MIN_SPARE_SERVERS=2 \
     PHP_FPM_PM_MAX_SPARE_SERVERS=8 \
     PHP_FPM_PM_MAX_REQUESTS=0 \
+    PHP_FPM_CHILD_PROCESS_USER=nginx \
+    PHP_FPM_CHILD_PROCESS_GROUP=www-data \
     NGINX_ACCESS_LOG=/www/logs/nginx/access.log \
     NGINX_ERROR_LOG=/www/logs/nginx/error.log \
     NGINX_CLIENT_MAX_BODY_SIZE=512M \
@@ -121,7 +123,11 @@ RUN mkdir -p /etc/ssh/sshd_config.d && \
 ## identity so ownership of host-mounted logs/sites stays consistent.
 ## uid 80 is free in the base image and no files are owned by the old
 ## nginx uid (100), so a plain usermod is sufficient.
-RUN usermod -u 80 -g www-data nginx
+## The upstream template has no `user` directive, so nginx falls back to its
+## compile-time default (nginx:nginx). Set it explicitly, otherwise workers
+## would run with primary group nginx instead of www-data.
+RUN usermod -u 80 -g www-data nginx && \
+    sed -i '1i user nginx www-data;' /etc/nginx/nginx.conf.template
 
 ADD install /
 

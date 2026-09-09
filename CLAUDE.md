@@ -42,8 +42,12 @@ docker build -f Dockerfile.debian.template \
   - nginx.conf 由 `10-init-webserver-config.sh` 从 `nginx.conf.template` envsubst 渲染；
     `/etc/nginx/conf.d/default.conf` 若已存在（本镜像自带 Drupal 配置）则保留不覆盖
   - s6 服务 envdir 是 `/run/s6/container_environment`（注意是下划线）
-  - nginx worker 以 **nginx(80):www-data(82)** 运行（Dockerfile `usermod -u 80 -g www-data nginx`，
-    对齐 nfrastack 时代属主，保证宿主机挂载日志/站点属主一致；Debian 变体为 80:33）
+  - 进程身份对齐 nfrastack 时代：nginx worker 与 php-fpm pool 子进程均为
+    **nginx(80):www-data(82)**（Dockerfile `usermod -u 80 -g www-data nginx` +
+    nginx.conf.template 顶部 `user nginx www-data;`（上游模板原本没有 user 指令，
+    会回落到编译默认 nginx:nginx）+ ENV `PHP_FPM_CHILD_PROCESS_USER/GROUP=nginx/www-data`）。
+    nginx/php-fpm 的 master 均为 root（旧镜像 php-fpm master 是 80:82，
+    属设计差异，root master + 降权子进程是标准做法）。Debian 变体为 80:33
 
 ### Init System（s6-overlay 标准结构）
 - `/etc/entrypoint.d/*.sh` 按数字序执行（每个在子 shell 中 source，**export 不会跨脚本传递**），

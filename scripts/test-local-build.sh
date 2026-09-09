@@ -65,12 +65,22 @@ echo "==> [2/5] Verifying PHP extensions in ${TAG}"
 # redis/zip/pdo_mysql/pdo_pgsql provided by the serversideup base.
 REQUIRED_EXTS="apcu bcmath bz2 exif gd igbinary imagick imap intl ldap \
 memcached msgpack mysqli pdo_mysql pdo_pgsql pgsql redis yaml zip"
-# Query php -m once (not per extension): repeated docker run invocations are
-# slow and can fail transiently under daemon load.
-PHP_MODULES="$(docker run --rm --platform "$PLATFORM" --entrypoint php "$TAG" -m 2>/dev/null)"
+# Query php -m once per attempt (not per extension): repeated docker run
+# invocations are slow and can fail transiently under daemon load. On busy
+# daemons a run can also return truncated output, so retry a couple of times
+# before declaring a failure.
 missing=""
-for ext in $REQUIRED_EXTS; do
-    echo "$PHP_MODULES" | grep -qix "$ext" || missing="$missing $ext"
+for attempt in 1 2 3; do
+    PHP_MODULES="$(docker run --rm --platform "$PLATFORM" --entrypoint php "$TAG" -m 2>/dev/null)"
+    missing=""
+    for ext in $REQUIRED_EXTS; do
+        echo "$PHP_MODULES" | grep -qix "$ext" || missing="$missing $ext"
+    done
+    [ -z "$missing" ] && break
+    if [ "$attempt" -lt 3 ]; then
+        echo "  (attempt $attempt: incomplete php -m output, missing:$missing — retrying)"
+        sleep 2
+    fi
 done
 if [ -n "$missing" ]; then
     echo "FAIL: ${TAG} missing PHP extensions:${missing}" >&2
