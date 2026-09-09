@@ -30,17 +30,17 @@ jobs:
           [
             {
               php_version: "8.3",
-              upstream_version: "8.3-alpine_3.24",
+              upstream_version: "8.3-fpm-nginx-alpine",
               tag: "8.3-alpine"
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-alpine_3.24",
+              upstream_version: "8.4-fpm-nginx-alpine",
               tag: "8.4-alpine"
             },
             {
               php_version: "8.5",
-              upstream_version: "8.5-alpine_3.24",
+              upstream_version: "8.5-fpm-nginx-alpine",
               tag: "8.5-alpine"
             },
           ]

@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This repository builds multi-architecture Docker images (linux/amd64, linux/arm64) for nginx + php-fpm with predefined configurations for Drupal and Laravel applications. Images are based on `nfrastack/nginx-php-fpm` (migrated from `tiredofit/nginx-php-fpm` in 2024).
+This repository builds multi-architecture Docker images (linux/amd64, linux/arm64) for nginx + php-fpm with predefined configurations for Drupal and Laravel applications.
+
+**Base image: `serversideup/php`**（2026-09 起，替代 nfrastack/nginx-php-fpm）。
+serversideup 镜像 = 官方 PHP 镜像 + s6-overlay + install-php-extensions + 全免费的环境变量配置。
+nfrastack 时代的备份见 `backup/nfrastack-base` 分支。
 
 ## Build Commands
 
@@ -12,7 +16,7 @@ This repository builds multi-architecture Docker images (linux/amd64, linux/arm6
 ```bash
 docker build -f Dockerfile.alpine.template \
   --build-arg PHP_VERSION=8.4 \
-  --build-arg UPSTREAM_VERSION=8.4-alpine_3.23 \
+  --build-arg UPSTREAM_VERSION=8.4-fpm-nginx-alpine \
   -t your-image-name:8.4-alpine .
 ```
 
@@ -20,50 +24,66 @@ docker build -f Dockerfile.alpine.template \
 ```bash
 docker build -f Dockerfile.debian.template \
   --build-arg PHP_VERSION=8.4 \
-  --build-arg UPSTREAM_VERSION=8.4-debian_bookworm \
+  --build-arg UPSTREAM_VERSION=8.4-fpm-nginx \
   -t your-image-name:8.4-debian .
 ```
 
 ## Architecture
 
-### Base Image
-- Alpine: `nfrastack/nginx-php-fpm:{PHP_VERSION}-alpine_3.23`
-- Debian: `nfrastack/nginx-php-fpm:{PHP_VERSION}-debian_{bookworm|trixie}`
-- PHP 8.5 Debian uses `debian_trixie`, others use `debian_bookworm`
+### Base Image (serversideup/php)
+- Alpine: `serversideup/php:{PHP_VERSION}-fpm-nginx-alpine`
+- Debian: `serversideup/php:{PHP_VERSION}-fpm-nginx`
+- 关键事实（已实测验证）：
+  - 默认 `USER www-data`，本镜像 Dockerfile 用 `USER root` 切回（sshd/cron 需要）
+  - `NGINX_HTTP_PORT` 上游默认 **8080**，本镜像 ENV 改为 80
+  - php-fpm 监听 **TCP 9000**（非 unix socket），`clear_env = no` 已内置
+  - php.ini / pool 配置是 `${VAR}` 占位符模板，由 PHP/php-fpm 启动时从进程环境展开
+  - php-fpm pool `pm.*` 参数（`PHP_FPM_PM_*`）原生可用，无付费锁定
+  - nginx.conf 由 `10-init-webserver-config.sh` 从 `nginx.conf.template` envsubst 渲染；
+    `/etc/nginx/conf.d/default.conf` 若已存在（本镜像自带 Drupal 配置）则保留不覆盖
+  - s6 服务 envdir 是 `/run/s6/container_environment`（注意是下划线）
 
-### Init System
-Uses s6-overlay with nfrastack extensions:
-- Init scripts in `/container/init/init.d/` (executed in order)
-- Service definitions in `/container/run/available/`
-- Init scripts must use `#!/command/with-contenv bash` shebang
-- Must source `/container/base/functions/container/init` and call `prepare_service` and `liftoff`
+### Init System（s6-overlay 标准结构）
+- `/etc/entrypoint.d/*.sh` 按数字序执行（每个在子 shell 中 source，**export 不会跨脚本传递**），
+  全部在 `/init`（s6 启动）之前运行 → 此阶段可安全修改已渲染配置、删除 s6 contents.d 服务文件
+- serversideup 自带：0-container-info、1-log-output-level、5-fpm-pool-user、5-generate-ssl、
+  10-init-webserver-config、50-laravel-automations
+- 本镜像的脚本（`install/etc/entrypoint.d/`）：
+  - `06-davyin-compat.sh` — 旧变量名翻译：sed 替换 pool/php.ini 模板里的 `${VAR}` 占位符为具体值
+  - `61-davyin-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径）
+  - `62-davyin-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/davyin`）
+  - `63-davyin-sshd.sh` — SSH 用户/密钥/host key；`USER_NAME` 为空时 `rm contents.d/davyin-sshd` 禁用服务
+  - `65-davyin-logrotate.sh` — 渲染 `/etc/logrotate.d/davyin`
+- 自有 s6 longrun 服务：`davyin-cron`、`davyin-sshd`
+  （run 脚本用 `#!/command/execlineb -P` + `with-contenv`，调用 `/usr/local/sbin/davyin-*` 包装脚本）
 
 ### Directory Mapping
-The `install/` directory is copied to container root via `ADD install /`:
-- `install/container/init/init.d/` → `/container/init/init.d/` (init scripts)
-- `install/container/scripts/` → `/container/scripts/`
-- `install/container/services.available/` → `/container/services.available/` (long-running services)
-- `install/etc/` → `/etc/` (nginx configs, drush, profiles)
-- `install/config/` → `/config/` (lsyncd)
+`install/` 目录通过 `ADD install /` 拷入容器：
+- `install/etc/entrypoint.d/` → 初始化脚本
+- `install/etc/nginx/conf.d/default.conf` → Drupal server block
+- `install/etc/nginx/conf.d/drupal-maps.conf` → Boost map（http context，conf.d 在 http 级 include）
+- `install/etc/nginx/extra/subdir.conf` → DRUPAL_SUBDIR(S) 运行时生成位置
+- `install/etc/nginx/vhost.d/` → 用户自定义 pre-/post-*.conf 扩展点
+- `install/etc/s6-overlay/s6-rc.d/` → 自有服务定义 + user/contents.d 注册
+- `install/etc/ssh/sshd_config.d/00-davyin.conf` → SSH 配置（Port 2222 等）
 
-### PHP Configuration Paths
-**Critical difference between Alpine and Debian:**
-- Alpine: `/etc/php{XX}/` (e.g., `/etc/php84/php.ini`, `/etc/php84/php-fpm.conf`)
-- Debian: `/etc/php/{X.Y}/` (e.g., `/etc/php/8.4/fpm/php-fpm.conf`)
+### PHP / Nginx 配置路径（Alpine 与 Debian 一致）
+- php.ini: `/usr/local/etc/php/conf.d/serversideup-docker-php.ini`（含 ${VAR} 占位符）
+- pool: `/usr/local/etc/php-fpm.d/docker-php-serversideup-pool.conf`（含 ${VAR} 占位符）
+- nginx 主配置: `/etc/nginx/nginx.conf`（启动时从 template 渲染）
+- 站点配置: `/etc/nginx/conf.d/default.conf`
 
-Init scripts must detect paths dynamically using the pattern in `install/container/init/init.d/40-drupal`.
-
-### Nginx Configuration
-- Uses nfrastack convention: `sites.available/` and `sites.enabled/` (with dots, not dashes)
-- Modular structure in `sites.enabled/{site-name}/` directory
-- Custom configs via `server.conf.d/http/` for http-level directives
-- Drupal Boost maps in `server.conf.d/http/drupal-maps.conf`
+### PHP Extensions
+构建时用 `install-php-extensions`（mlocati 工具）安装：
+igbinary, msgpack, memcached, imagick, ldap, yaml, bz2
+（基础镜像已含 redis, zip, pdo_pgsql, pdo_mysql, sodium, opcache 等）
 
 ### SSH Server
-- Integrated from `ghcr.io/linuxserver/openssh-server`
-- Conditional startup: only starts when `USER_NAME` env var is set
-- Alpine: sshd binary at `/usr/sbin/sshd.pam`, must patch s6 run script in Dockerfile
-- Debian: sshd binary at `/usr/sbin/sshd` (no patch needed)
+- `USER_NAME` 设置时启用（默认 ENV `USER_NAME=dsf`），监听 2222
+- `63-davyin-sshd.sh` 负责建用户/host key/密钥；USER_NAME 为空时从 s6 contents.d 移除服务
+- 公钥在 `/etc/ssh/authorized_keys.d/<user>`（不用 ~/.ssh：webroot 挂载卷的属主问题
+  会触发 StrictModes 拒绝；且 sshd 以目标用户身份读 authorized_keys，文件必须属该用户）
+- `useradd` 新建账号默认锁定（shadow 为 `!`），必须 `usermod -p '*'` 否则公钥登录也被拒
 
 ## CI/CD
 
@@ -71,23 +91,9 @@ GitHub Actions workflows in `.github/workflows/`:
 - `docker-image.yml` - Alpine builds (PHP 8.3/8.4/8.5)
 - `docker-image-debian.yml` - Debian builds (PHP 8.3/8.4/8.5)
 
-Triggers: push to main, daily cron, manual dispatch.
+Triggers: push to main, weekly cron, manual dispatch.
 Builds and pushes to Docker Hub and Aliyun Container Registry.
-
-## Key Environment Variables
-
-Runtime configuration via environment variables (see README.md for full list):
-- `DRUPAL_WEB_ROOT` - Set to "web" for Composer-based Drupal projects
-- `USER_NAME` - Triggers SSH server startup when set
-- `PHP_FPM_*` - PHP-FPM process manager settings
-- `NGINX_*` - Nginx configuration overrides
-- `ENABLE_LSYNCD` - Enable real-time file sync service
-
-## PHP Extensions
-
-Enabled at build time via `php-ext enable` command:
-- Core: igbinary, msgpack (dependencies), zip, yaml
-- Optional: redis, memcached, imagick, ldap, pdo_pgsql
+基础镜像用浮动 tag（周更带安全补丁）；生产环境建议钉 `-v{serversideup版本}` tag。
 
 ## Testing
 
@@ -95,8 +101,10 @@ Enabled at build time via `php-ext enable` command:
 ```bash
 ./scripts/test-local-build.sh [PHP_VERSION] [VARIANT] [UPSTREAM_VERSION]
 ```
-构建镜像 → 从官方 drupal 镜像提取代码 → 启动容器 → 验证 Drupal 安装页返回 HTTP 200。
-详见 `scripts/test-local-build.sh` 头部注释。
+构建镜像 → 从官方 drupal 镜像的 `/opt/drupal`（含 vendor）提取代码 →
+挂载并设 `DRUPAL_WEB_ROOT=web` → 验证安装页 HTTP 200。
+注意：官方 drupal 镜像的 `/var/www/html` 是指向 `/opt/drupal/web` 的符号链接，
+直接 cp 它会丢失 vendor/ —— 必须拷 `/opt/drupal`。
 
 ### Quick test
 ```bash
@@ -112,13 +120,15 @@ docker run -d --name test \
 docker run -d --name test-ssh \
   -p 8080:80 -p 2222:2222 \
   -e USER_NAME=admin \
+  -e PUBLIC_KEY="$(cat ~/.ssh/id_ed25519.pub)" \
   your-image-name:tag
 ssh -p 2222 admin@localhost
 ```
 
 ## Pre-push Requirement (提交推送前必须本地测试)
 
-任何修改 `Dockerfile.*.template`、`install/`、`.github/workflows/` 或 CI 构建矩阵的提交，在 **commit 并 push 之前** 必须完成本地构建并通过 Drupal 冒烟测试：
+任何修改 `Dockerfile.*.template`、`install/`、`.github/workflows/` 或 CI 构建矩阵的提交，在
+**commit 并 push 之前** 必须完成本地构建并通过 Drupal 冒烟测试：
 
 ```bash
 ./scripts/test-local-build.sh 8.4 alpine        # 必测
@@ -126,54 +136,38 @@ ssh -p 2222 admin@localhost
 ./scripts/test-local-build.sh 8.3 alpine        # 涉及 PHP 版本相关逻辑时补测
 ```
 
-测试脚本会用官方 `drupal:11-apache` 镜像提取 Drupal 代码，挂载到新构建的镜像中运行，
-并验证 nginx + php-fpm 能正常输出 Drupal 安装页面（HTTP 200）。未通过测试的代码不得推送。
-
 CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不验证容器运行时）。
-历史教训：Alpine 3.24 升级曾引入运行时故障（见下方"容器状态目录"），CI 全绿但镜像无法启动。
 
-## Critical Runtime Gotchas
+## Runtime Gotchas (serversideup 基座)
 
-### 不要在镜像中创建 /container/state 下的任何文件
-基础镜像的 `/etc/cont-init.d/0-container` 靠 `/container/state` **不存在** 来判断首次启动。
-镜像中若存在该目录（如构建时 `touch /container/state/init/.advanced`），容器首次启动会被
-误判为 warm restart，初始化配置被跳过，导致 nginx 无 server.conf、php-fpm 无 pool 配置。
-
-### PHP-FPM pool pm.* 参数被上游 Advanced 锁定
-上游把默认 pool 的 `pm.*` 进程管理参数（MAX_CHILDREN/START/MIN/MAX_SPARE 等）
-圈入付费 Advanced 功能：对应环境变量在初始化时被**静默重置为默认值**，
-不报错、不记录。已验证 `PHPFPM_POOL_DEFAULT_*` 和旧版 `PHP_FPM_*` 别名都无效。
-- 本镜像用自有 init `45-php-fpm-pool` 改写生成的 pool 配置，使 `PHP_FPM_*` 变量生效
-- 自定义 pool（`PHPFPM_POOL_<NAME>_LISTEN_TYPE` 定义）不受锁定，其 pm 参数原生可用
-- 备选方案：挂载 `/override/php-fpm/pool/WWW/`（目录名必须大写，上游大小写 bug）
-
-### NGINX_WORKER_* 变量上游不生效
-- `NGINX_WORKER_PROCESSES`：上游定义了变量、也带了 `server-worker.template`，
-  但 `10-nginx` 函数里**没有调用 render_template**，生成的 server.conf 永远
-  没有 `worker_processes` 指令（nginx 回退到编译默认值 1）。属上游接线遗漏，非 Advanced 锁定。
-- `NGINX_WORKER_RLIMIT_NOFILE`：文档有，但被 Advanced 锁定（静默重置为 100000）。
-- 本镜像用自有 init `44-nginx-worker` 把两个指令写进 `server.conf.d/worker.conf`
-  （server.conf 在 main context include 该目录，重启安全，上游不清理非自有文件）。
+- **entrypoint.d 脚本在子 shell 执行**：export 不跨脚本传递，也不进 s6 服务环境。
+  要改 php/pool 配置 → sed 模板占位符；要改 s6 服务环境 → 写 `/run/s6/container_environment/`
+  （但该目录 /init 后才存在，entrypoint 阶段写不进去）
+- **nginx.conf 在 entrypoint #10 渲染**：我们的脚本（06/61+）在其前后分工：
+  06 处理 php（与 nginx 无关）；61 在 #10 之后改已渲染的 nginx.conf
+- **`docker exec` / SSH 会话只有镜像 ENV 默认值**：运行时 `-e` 覆盖只影响 s6 服务进程
+  （sshd 会过滤环境变量）。php.ini 占位符在 CLI 下按 ENV 默认值展开
+- **PHP_CLI 的 opcache**：`PHP_OPCACHE_ENABLE=1` 同时开 cli opcache（上游行为），无实际影响
+- **JIT 保持关闭**：`PHP_OPCACHE_JIT=off` + `BUFFER_SIZE=0`（Alpine/musl 上 Drupal 会 SIGSEGV）
 
 ## Common Tasks
 
 ### Adding a new PHP version
 1. Add entry to matrix in `.github/workflows/docker-image.yml` (Alpine)
 2. Add entry to matrix in `.github/workflows/docker-image-debian.yml` (Debian)
-3. Use correct `upstream_version` tag format from nfrastack Docker Hub
+3. Tag 格式：alpine `{version}-fpm-nginx-alpine`；debian `{version}-fpm-nginx`
 
 ### Modifying nginx configuration
-- Global http-level: edit `install/etc/nginx/server.conf.d/http/*.conf`
-- Site-level: edit `install/etc/nginx/sites.available/drupal.conf`
-- Drupal-specific maps: edit `install/etc/nginx/server.conf.d/http/drupal-maps.conf`
+- 站点 server block: `install/etc/nginx/conf.d/default.conf`
+- Drupal Boost maps: `install/etc/nginx/conf.d/drupal-maps.conf`
+- http 级其他指令：可在 default.conf 同目录加 `zz-*.conf`（conf.d 在 http context include）
 
-### Adding a new init script
-1. Create script in `install/container/init/init.d/{NN}-{name}`
-2. Use naming convention: `{priority}-{name}` (e.g., `40-drupal`)
-3. Include shebang, source init functions, call `prepare_service` and `liftoff`
-4. Make executable: `chmod +x` (handled automatically by Dockerfile RUN command)
+### Adding an init script
+1. 放到 `install/etc/entrypoint.d/{NN}-davyin-{name}.sh`（POSIX sh，必须 exit 0）
+2. 序号参考：serversideup 自带 0/1/5/10/50；我们的 php 类放 06，nginx 类放 61（必须在 10 之后）
+3. Dockerfile 的 chmod +x 步骤会覆盖 `*-davyin-*.sh`
 
 ### Adding a long-running service
-1. Create directory in `install/container/services.available/{NN}-{name}/`
-2. Add `run` script with shebang and exec command
-3. Control startup via init script using `service_start`/`service_stop`
+1. `install/etc/s6-overlay/s6-rc.d/davyin-{name}/`：`run`（execline + with-contenv）+ `type`（longrun）
+2. 注册：`install/etc/s6-overlay/s6-rc.d/user/contents.d/davyin-{name}`（空文件）
+3. 条件启动：在对应 entrypoint 脚本里 `rm contents.d/davyin-{name}`（entrypoint 先于 s6 编译运行）

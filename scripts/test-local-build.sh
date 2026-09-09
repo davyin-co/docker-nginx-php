@@ -7,7 +7,7 @@
 #
 #   PHP_VERSION      8.3 | 8.4 | 8.5            (default: 8.4)
 #   VARIANT          alpine | debian            (default: alpine)
-#   UPSTREAM_VERSION e.g. 8.4-alpine_3.24       (default: derived from matrix)
+#   UPSTREAM_VERSION e.g. 8.4-fpm-nginx-alpine  (default: derived from variant)
 #
 # Env overrides:
 #   PLATFORM     build/run platform      (default: linux/amd64)
@@ -33,14 +33,8 @@ WAIT_SECONDS="${WAIT_SECONDS:-240}"
 
 if [ -z "$UPSTREAM_VERSION" ]; then
     case "$VARIANT" in
-        alpine) UPSTREAM_VERSION="${PHP_VERSION}-alpine_3.24" ;;
-        debian)
-            if [ "$PHP_VERSION" = "8.5" ]; then
-                UPSTREAM_VERSION="${PHP_VERSION}-debian_trixie"
-            else
-                UPSTREAM_VERSION="${PHP_VERSION}-debian_bookworm"
-            fi
-            ;;
+        alpine) UPSTREAM_VERSION="${PHP_VERSION}-fpm-nginx-alpine" ;;
+        debian) UPSTREAM_VERSION="${PHP_VERSION}-fpm-nginx" ;;
         *) echo "ERROR: unknown variant '$VARIANT' (expected alpine|debian)" >&2; exit 1 ;;
     esac
 fi
@@ -69,15 +63,20 @@ echo "==> [2/4] Copying Drupal codebase from ${DRUPAL_IMAGE}"
 docker pull -q "$DRUPAL_IMAGE" >/dev/null
 docker create --name "$SRC_CONTAINER" "$DRUPAL_IMAGE" >/dev/null
 mkdir -p "$TMPDIR/html"
-docker cp "$SRC_CONTAINER":/var/www/html/. "$TMPDIR/html/"
+# The official drupal image keeps the composer project at /opt/drupal
+# (vendor/, web/) and symlinks /var/www/html → /opt/drupal/web. We need the
+# whole project (vendor included), so copy /opt/drupal and serve web/ via
+# DRUPAL_WEB_ROOT=web.
+docker cp "$SRC_CONTAINER":/opt/drupal/. "$TMPDIR/html/"
 docker rm -f "$SRC_CONTAINER" >/dev/null
 SRC_CONTAINER=""
-[ -f "$TMPDIR/html/index.php" ] || { echo "ERROR: no index.php in drupal image code" >&2; exit 1; }
+[ -f "$TMPDIR/html/web/index.php" ] || { echo "ERROR: no web/index.php in drupal image code" >&2; exit 1; }
 
 echo "==> [3/4] Starting test container ${NAME} on port ${PORT}"
 docker run -d --name "$NAME" \
     --platform "$PLATFORM" \
     -p "${PORT}:80" \
+    -e DRUPAL_WEB_ROOT=web \
     -v "$TMPDIR/html:/var/www/html" \
     "$TAG" >/dev/null
 

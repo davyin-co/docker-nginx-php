@@ -1,0 +1,6 @@
+#!/bin/sh
+# sshd wrapper — runtime dir + foreground mode with logs to stderr.
+mkdir -p /run/sshd
+chown root:root /run/sshd
+chmod 755 /run/sshd
+exec /usr/sbin/sshd -D -e

@@ -30,19 +30,19 @@ jobs:
           [
             {
               php_version: "8.3",
-              upstream_version: "8.3-debian_bookworm",
+              upstream_version: "8.3-fpm-nginx",
               tag: "8.3-debian",
               platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.4",
-              upstream_version: "8.4-debian_bookworm",
+              upstream_version: "8.4-fpm-nginx",
               tag: "8.4-debian",
               platforms: "linux/amd64,linux/arm64"
             },
             {
               php_version: "8.5",
-              upstream_version: "8.5-debian_trixie",
+              upstream_version: "8.5-fpm-nginx",
               tag: "8.5-debian",
               platforms: "linux/amd64,linux/arm64"
             }

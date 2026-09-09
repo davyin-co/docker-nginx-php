@@ -5,7 +5,10 @@ services:
     # image: tiredofit/nginx-php-fpm:7.4-alpine
     build:
       context: ./
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine.template
+      args:
+        PHP_VERSION: "8.4"
+        UPSTREAM_VERSION: "8.4-fpm-nginx-alpine"
     container_name: nginx-php-fpm-app
     labels:
       - traefik.enable=true
