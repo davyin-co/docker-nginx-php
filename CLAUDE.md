@@ -38,7 +38,10 @@ docker build -f Dockerfile.debian.template \
   - `NGINX_HTTP_PORT` 上游默认 **8080**，本镜像 ENV 改为 80
   - php-fpm 监听 **TCP 9000**（非 unix socket），`clear_env = no` 已内置
   - php.ini / pool 配置是 `${VAR}` 占位符模板，由 PHP/php-fpm 启动时从进程环境展开
-  - php-fpm pool `pm.*` 参数（`PHP_FPM_PM_*`）原生可用，无付费锁定
+  - php-fpm pool `pm.*` 参数原生可用（无付费锁定）；但本镜像的 canonical 变量是
+    nfrastack 时代的 `PHP_FPM_PROCESS_MANAGER/PHP_FPM_MAX_CHILDREN/...`（DSF 平台注入的这组），
+    由 `06-davyin-compat.sh` 无条件渲染进 pool 配置——serversideup 原生 `PHP_FPM_PM_*` 会被
+    ENV 里的 canonical 默认值覆盖，不要使用
   - nginx.conf 由 `10-init-webserver-config.sh` 从 `nginx.conf.template` envsubst 渲染；
     `/etc/nginx/conf.d/default.conf` 若已存在（本镜像自带 Drupal 配置）则保留不覆盖
   - s6 服务 envdir 是 `/run/s6/container_environment`（注意是下划线）

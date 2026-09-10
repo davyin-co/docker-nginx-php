@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# 06-davyin-compat.sh — legacy (nfrastack-era) environment variable compatibility.
+# 06-davyin-compat.sh — canonical (nfrastack-era) environment variable handling.
 #
 # Runs BEFORE serversideup's 10-init-webserver-config.sh (entrypoint.d scripts
 # execute in numeric order, all before /init starts s6).
@@ -11,14 +11,19 @@
 # placeholders from the process environment, so instead we replace the
 # placeholders in the shipped config templates with concrete values.
 #
-# Canonical variables (serversideup native, preferred for new deployments):
-#   PHP_FPM_PM_CONTROL / PHP_FPM_PM_MAX_CHILDREN / PHP_FPM_PM_START_SERVERS /
-#   PHP_FPM_PM_MIN_SPARE_SERVERS / PHP_FPM_PM_MAX_SPARE_SERVERS /
-#   PHP_FPM_PM_MAX_REQUESTS / PHP_FPM_PM_STATUS_PATH /
-#   PHP_UPLOAD_MAX_FILE_SIZE / PHP_POST_MAX_SIZE / PHP_DATE_TIMEZONE
+# Canonical variables (nfrastack-era names, injected by the DSF platform —
+# these are THE supported contract):
+#   PHP_FPM_PROCESS_MANAGER / PHP_FPM_MAX_CHILDREN / PHP_FPM_START_SERVERS /
+#   PHP_FPM_MIN_SPARE_SERVERS / PHP_FPM_MAX_SPARE_SERVERS / PHP_FPM_MAX_REQUESTS
+#   PHP_FPM_STATUS_ENABLE / PHP_LOG_LEVEL / PHP_UPLOAD_MAX_SIZE /
+#   MAX_FILE_UPLOAD_SIZE / TIMEZONE
 #
-# Legacy variables translated here:
-#   PHP_FPM_PM                 → PHP_FPM_PM_CONTROL
+# The canonical PHP_FPM_* names are baked as ENV defaults in the Dockerfile,
+# so the renders below always fire and the serversideup-native PHP_FPM_PM_*
+# variables are superseded (documented in README).
+#
+# Translations applied here:
+#   PHP_FPM_PROCESS_MANAGER    → PHP_FPM_PM_CONTROL
 #   PHP_FPM_MAX_CHILDREN       → PHP_FPM_PM_MAX_CHILDREN
 #   PHP_FPM_START_SERVERS      → PHP_FPM_PM_START_SERVERS
 #   PHP_FPM_MIN_SPARE_SERVERS  → PHP_FPM_PM_MIN_SPARE_SERVERS
@@ -45,17 +50,19 @@ render_ini() {
     sed -i "s|\${$1}|$2|g" "$PHP_INI"
 }
 
-# --- PHP-FPM process manager (legacy PHP_FPM_* → PHP_FPM_PM_*) ---
-[ -n "$PHP_FPM_PM" ]                && render_pool PHP_FPM_PM_CONTROL "$PHP_FPM_PM"
-[ -n "$PHP_FPM_MAX_CHILDREN" ]      && render_pool PHP_FPM_PM_MAX_CHILDREN "$PHP_FPM_MAX_CHILDREN"
-[ -n "$PHP_FPM_START_SERVERS" ]     && render_pool PHP_FPM_PM_START_SERVERS "$PHP_FPM_START_SERVERS"
-[ -n "$PHP_FPM_MIN_SPARE_SERVERS" ] && render_pool PHP_FPM_PM_MIN_SPARE_SERVERS "$PHP_FPM_MIN_SPARE_SERVERS"
-[ -n "$PHP_FPM_MAX_SPARE_SERVERS" ] && render_pool PHP_FPM_PM_MAX_SPARE_SERVERS "$PHP_FPM_MAX_SPARE_SERVERS"
-[ -n "$PHP_FPM_MAX_REQUESTS" ]      && render_pool PHP_FPM_PM_MAX_REQUESTS "$PHP_FPM_MAX_REQUESTS"
+# --- PHP-FPM process manager (canonical PHP_FPM_* → pool placeholders) ---
+# PHP_FPM_PM is accepted as an alias of PHP_FPM_PROCESS_MANAGER.
+PM="${PHP_FPM_PROCESS_MANAGER:-${PHP_FPM_PM:-dynamic}}"
+render_pool PHP_FPM_PM_CONTROL           "$PM"
+render_pool PHP_FPM_PM_MAX_CHILDREN      "${PHP_FPM_MAX_CHILDREN:-40}"
+render_pool PHP_FPM_PM_START_SERVERS     "${PHP_FPM_START_SERVERS:-4}"
+render_pool PHP_FPM_PM_MIN_SPARE_SERVERS "${PHP_FPM_MIN_SPARE_SERVERS:-2}"
+render_pool PHP_FPM_PM_MAX_SPARE_SERVERS "${PHP_FPM_MAX_SPARE_SERVERS:-8}"
+render_pool PHP_FPM_PM_MAX_REQUESTS      "${PHP_FPM_MAX_REQUESTS:-0}"
 
 # --- FPM status page ---
 case "$PHP_FPM_STATUS_ENABLE" in
-    [Tt][Rr][Uu][Ee]|[Tt]rue|1|[Yy][Ee][Ss])
+    [Tt][Rr][Uu][Ee]|1|[Yy][Ee][Ss])
         render_pool PHP_FPM_PM_STATUS_PATH "/fpm-status"
         ;;
 esac

@@ -81,7 +81,7 @@ services:
       - DRUPAL_WEB_ROOT=web
       - USER_NAME=admin  # Optional: enables SSH
       - PHP_MEMORY_LIMIT=1024M
-      - PHP_FPM_PM_MAX_CHILDREN=40
+      - PHP_FPM_MAX_CHILDREN=40
     restart: unless-stopped
 ```
 
@@ -104,33 +104,31 @@ PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表�
 |----------|-------------|---------|
 | `PHP_MEMORY_LIMIT` | PHP memory limit | `1024M` |
 | `PHP_MAX_EXECUTION_TIME` | PHP max execution time | `180` |
-| `PHP_UPLOAD_MAX_FILE_SIZE` | Max upload file size | `512M` |
-| `PHP_POST_MAX_SIZE` | Max POST size | `512M` |
+| `PHP_UPLOAD_MAX_FILE_SIZE` | Max upload file size | `2G` |
+| `PHP_POST_MAX_SIZE` | Max POST size | `2G` |
 | `PHP_OPCACHE_ENABLE` | Enable OPcache | `1` |
 | `PHP_OPCACHE_JIT` | JIT mode (`off` recommended on Alpine/musl) | `off` |
-| `PHP_FPM_PM_CONTROL` | Process manager (`static`/`dynamic`/`ondemand`) | `dynamic` |
-| `PHP_FPM_PM_MAX_CHILDREN` | Max child processes | `40` |
-| `PHP_FPM_PM_START_SERVERS` | Initial server count | `4` |
-| `PHP_FPM_PM_MIN_SPARE_SERVERS` | Min spare servers | `2` |
-| `PHP_FPM_PM_MAX_SPARE_SERVERS` | Max spare servers | `8` |
-| `PHP_FPM_PM_MAX_REQUESTS` | Max requests per child before respawn | `0` |
-| `PHP_FPM_PM_STATUS_PATH` | FPM status path (e.g. `/fpm-status`) | (empty) |
+| `PHP_FPM_PROCESS_MANAGER` | Process manager (`static`/`dynamic`/`ondemand`) | `dynamic` |
+| `PHP_FPM_MAX_CHILDREN` | Max child processes | `40` |
+| `PHP_FPM_START_SERVERS` | Initial server count | `4` |
+| `PHP_FPM_MIN_SPARE_SERVERS` | Min spare servers | `2` |
+| `PHP_FPM_MAX_SPARE_SERVERS` | Max spare servers | `8` |
+| `PHP_FPM_MAX_REQUESTS` | Max requests per child before respawn | `0` |
 | `TIMEOUT` | Nginx/fastcgi request timeout | (empty) |
 | `PHP_LOG_LEVEL` | PHP-FPM log level | `error` |
 
-### 旧变量名兼容（nfrastack 时代）
+> **说明**：`PHP_FPM_*`（nfrastack 时代的命名，DSF 平台注入的即这组）是本镜像的
+> **canonical** 变量，容器启动时由 `06-davyin-compat.sh` 渲染进 pool 配置。
+> serversideup 原生的 `PHP_FPM_PM_*` 变量会被本镜像的 ENV 默认值覆盖，**请勿使用**。
 
-以下旧变量仍可使用，容器启动时自动转换为新变量：
+### 其他旧变量名兼容
+
+以下旧变量仍可使用，容器启动时自动转换：
 
 | Legacy (deprecated) | Canonical |
 |---------------------|-----------|
-| `PHP_FPM_PM` | `PHP_FPM_PM_CONTROL` |
-| `PHP_FPM_MAX_CHILDREN` | `PHP_FPM_PM_MAX_CHILDREN` |
-| `PHP_FPM_START_SERVERS` | `PHP_FPM_PM_START_SERVERS` |
-| `PHP_FPM_MIN_SPARE_SERVERS` | `PHP_FPM_PM_MIN_SPARE_SERVERS` |
-| `PHP_FPM_MAX_SPARE_SERVERS` | `PHP_FPM_PM_MAX_SPARE_SERVERS` |
-| `PHP_FPM_MAX_REQUESTS` | `PHP_FPM_PM_MAX_REQUESTS` |
-| `PHP_FPM_STATUS_ENABLE=TRUE` | `PHP_FPM_PM_STATUS_PATH=/fpm-status` |
+| `PHP_FPM_PM` | `PHP_FPM_PROCESS_MANAGER` |
+| `PHP_FPM_STATUS_ENABLE=TRUE` | fpm 开启 `/fpm-status` |
 | `PHP_UPLOAD_MAX_SIZE` | `PHP_UPLOAD_MAX_FILE_SIZE` + `PHP_POST_MAX_SIZE` |
 | `MAX_FILE_UPLOAD_SIZE` | 同上 + `NGINX_CLIENT_MAX_BODY_SIZE` |
 | `NGINX_LOG_ACCESS_PATH` | `NGINX_ACCESS_LOG`（目录 → 拼接 `/access.log`） |
