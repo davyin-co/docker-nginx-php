@@ -17,6 +17,7 @@ cat > /etc/logrotate.d/davyin <<EOF
 /www/logs/nginx/*.log /www/logs/php/*.log {
     daily
     rotate ${RETAIN_DAYS}
+    dateext
     missingok
     notifempty
     ${COMPRESS}

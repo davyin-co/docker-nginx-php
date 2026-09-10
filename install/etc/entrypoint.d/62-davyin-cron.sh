@@ -23,14 +23,15 @@ if [ -d /etc/crontabs ]; then
     {
         echo "$HEADER"
         printf '%s' "$CRON_LINES"
-        echo "17 3 * * * /usr/sbin/logrotate /etc/logrotate.conf >/dev/null 2>&1"
+        # 对齐 nfrastack 时代：23:59:55 轮转，dateext 文件名日期 = 日志所属当天
+        echo "59 23 * * * sleep 55; /usr/sbin/logrotate -f /etc/logrotate.conf >/dev/null 2>&1"
     } > /etc/crontabs/root
 else
     # cron (Debian) — cron.d entries require the user column
     {
         echo "$HEADER"
         printf '%s' "$CRON_LINES" | sed 's/^\([^ ]* [^ ]* [^ ]* [^ ]* [^ ]* \)/\1root /'
-        echo "17 3 * * * root /usr/sbin/logrotate /etc/logrotate.conf >/dev/null 2>&1"
+        echo "59 23 * * * root sleep 55; /usr/sbin/logrotate -f /etc/logrotate.conf >/dev/null 2>&1"
     } > /etc/cron.d/davyin
     chmod 0644 /etc/cron.d/davyin
 fi
