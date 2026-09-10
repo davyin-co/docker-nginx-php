@@ -94,4 +94,22 @@ if [ -f "$PHP_INI" ] && ! grep -q "^expose_php" "$PHP_INI"; then
     echo "expose_php = Off" >> "$PHP_INI"
 fi
 
+# --- NGINX_WORKER_PROCESSES ---
+# Upstream hardcodes "worker_processes auto;" in the nginx.conf template.
+# Replace it with a placeholder so 10-init-webserver-config.sh envsubst-renders
+# our NGINX_WORKER_PROCESSES (ENV default: auto) into the final nginx.conf.
+NGINX_TEMPLATE="/etc/nginx/nginx.conf.template"
+WORKER_PROCESSES="${NGINX_WORKER_PROCESSES:-auto}"
+case "$WORKER_PROCESSES" in
+    auto|''|*[!0-9]*)
+        if [ "$WORKER_PROCESSES" != "auto" ] && [ -n "$WORKER_PROCESSES" ]; then
+            echo "⚠️  (davyin-compat): invalid NGINX_WORKER_PROCESSES='$WORKER_PROCESSES', falling back to 'auto'"
+        fi
+        WORKER_PROCESSES="auto"
+        ;;
+esac
+if [ -f "$NGINX_TEMPLATE" ] && grep -q '^worker_processes ' "$NGINX_TEMPLATE"; then
+    sed -i "s|^worker_processes .*|worker_processes  ${WORKER_PROCESSES};|" "$NGINX_TEMPLATE"
+fi
+
 exit 0

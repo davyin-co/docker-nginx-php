@@ -135,8 +135,7 @@ PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表�
 | `NGINX_LOG_ERROR_PATH` | `NGINX_ERROR_LOG`（目录 → 拼接 `/error.log`） |
 | `TIMEZONE` | `PHP_DATE_TIMEZONE`（并设置系统时区） |
 
-**已移除/失效的变量**：`NGINX_WORKER_PROCESSES`（基础镜像固定 `auto`）、
-`NGINX_WORKER_RLIMIT_NOFILE`、`NGINX_ENABLE_COMPRESSION_BROTLI`（无 brotli 模块）、
+**已移除/失效的变量**：`NGINX_WORKER_RLIMIT_NOFILE`、`NGINX_ENABLE_COMPRESSION_BROTLI`（无 brotli 模块）、
 `NGINX_ENABLE_OPEN_FILE_CACHE`、`NGINX_FORCE_RESET_PERMISSIONS`（不再递归 chown webroot）、
 `ENABLE_LSYNCD` 及全部 `LSYNCD_*`（lsyncd 已移除）、`PHPFPM_POOL_*`。
 
@@ -144,6 +143,7 @@ PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表�
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `NGINX_HTTP_PORT` | Custom listen port | `80` |
+| `NGINX_WORKER_PROCESSES` | Worker processes (number or `auto`) | `auto` |
 | `NGINX_ACCESS_LOG` | Access log file | `/www/logs/nginx/access.log` |
 | `NGINX_ERROR_LOG` | Error log file | `/www/logs/nginx/error.log` |
 | `NGINX_CLIENT_MAX_BODY_SIZE` | Max request body | `512M` |
