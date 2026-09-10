@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# 65-davyin-logrotate.sh — render logrotate rules for /www/logs.
+# 65-logrotate.sh — render logrotate rules for /www/logs.
 #
 # Variables:
 #   LOGROTATE_RETAIN_DAYS        days of rotated logs to keep (default 60)
@@ -13,7 +13,7 @@ case "$LOGROTATE_COMPRESSION_TYPE" in
     *)                           COMPRESS="compress" ;;
 esac
 
-cat > /etc/logrotate.d/davyin <<EOF
+cat > /etc/logrotate.d/custom <<EOF
 /www/logs/nginx/*.log /www/logs/php/*.log {
     daily
     rotate ${RETAIN_DAYS}

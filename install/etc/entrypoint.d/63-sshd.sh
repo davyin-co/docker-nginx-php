@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# 63-davyin-sshd.sh — optional SSH server setup.
+# 63-sshd.sh — optional SSH server setup.
 #
-# Enabled when USER_NAME is set; otherwise the davyin-sshd s6 service is
+# Enabled when USER_NAME is set; otherwise the sshd s6 service is
 # removed from the boot bundle (this script runs before /init, so editing
 # /etc/s6-overlay/s6-rc.d/user/contents.d/ is still effective).
 #
@@ -13,14 +13,14 @@
 #   PUBLIC_KEY       public key content for authorized_keys
 #   PUBLIC_KEY_FILE  path to a file containing the public key
 
-S6_SERVICE_LINK="/etc/s6-overlay/s6-rc.d/user/contents.d/davyin-sshd"
+S6_SERVICE_LINK="/etc/s6-overlay/s6-rc.d/user/contents.d/sshd"
 
 if [ -z "$USER_NAME" ]; then
     rm -f "$S6_SERVICE_LINK"
     exit 0
 fi
 
-echo "👉 (davyin-sshd): Enabling SSH server for user '${USER_NAME}' on port 2222"
+echo "👉 (sshd): Enabling SSH server for user '${USER_NAME}' on port 2222"
 
 # Host keys
 mkdir -p /etc/ssh
@@ -32,7 +32,7 @@ if ! id "$USER_NAME" >/dev/null 2>&1; then
         || useradd -M -d /var/www/html -s /bin/bash -G www-data "$USER_NAME"
 fi
 
-SSHD_DROPIN="/etc/ssh/sshd_config.d/00-davyin.conf"
+SSHD_DROPIN="/etc/ssh/sshd_config.d/00-custom.conf"
 
 # Password authentication (opt-in via PASSWORD_ACCESS)
 PASSWORD_VALUE="${USER_PASSWORD:-${PASSWORD:-}}"
@@ -43,7 +43,7 @@ case "$PASSWORD_ACCESS" in
             PASSWORD_SET=1
             sed -i 's/^PasswordAuthentication .*/PasswordAuthentication yes/' "$SSHD_DROPIN"
         else
-            echo "⚠️  (davyin-sshd): PASSWORD_ACCESS=true but USER_PASSWORD is empty; keeping key-only auth"
+            echo "⚠️  (sshd): PASSWORD_ACCESS=true but USER_PASSWORD is empty; keeping key-only auth"
         fi
         ;;
 esac
@@ -56,7 +56,7 @@ if [ -z "$PASSWORD_SET" ]; then
 fi
 
 # Public key authentication (root-owned location, see AuthorizedKeysFile in
-# /etc/ssh/sshd_config.d/00-davyin.conf)
+# /etc/ssh/sshd_config.d/00-custom.conf)
 PUBKEY="${PUBLIC_KEY:-}"
 [ -n "$PUBLIC_KEY_FILE" ] && [ -f "$PUBLIC_KEY_FILE" ] && PUBKEY="$(cat "$PUBLIC_KEY_FILE")"
 if [ -n "$PUBKEY" ]; then

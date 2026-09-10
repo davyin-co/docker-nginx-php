@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# 06-davyin-compat.sh — canonical (nfrastack-era) environment variable handling.
+# 06-compat.sh — canonical (nfrastack-era) environment variable handling.
 #
 # Runs BEFORE serversideup's 10-init-webserver-config.sh (entrypoint.d scripts
 # execute in numeric order, all before /init starts s6).
@@ -103,7 +103,7 @@ WORKER_PROCESSES="${NGINX_WORKER_PROCESSES:-auto}"
 case "$WORKER_PROCESSES" in
     auto|''|*[!0-9]*)
         if [ "$WORKER_PROCESSES" != "auto" ] && [ -n "$WORKER_PROCESSES" ]; then
-            echo "⚠️  (davyin-compat): invalid NGINX_WORKER_PROCESSES='$WORKER_PROCESSES', falling back to 'auto'"
+            echo "⚠️  (compat): invalid NGINX_WORKER_PROCESSES='$WORKER_PROCESSES', falling back to 'auto'"
         fi
         WORKER_PROCESSES="auto"
         ;;

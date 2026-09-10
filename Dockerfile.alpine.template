@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# davyin nginx + php-fpm image (Alpine variant)
+# nginx + php-fpm image (Alpine variant)
 # Base: serversideup/php (built on the official PHP images, s6-overlay,
 # install-php-extensions). All runtime knobs are plain environment variables —
 # no paid "advanced" tier, no opaque config framework.
@@ -132,9 +132,10 @@ RUN usermod -u 80 -g www-data nginx && \
 
 ADD install /
 
-RUN chmod +x /etc/entrypoint.d/*-davyin-*.sh \
-        /etc/s6-overlay/s6-rc.d/davyin-*/run \
-        /usr/local/sbin/davyin-*
+RUN chmod +x /etc/entrypoint.d/*.sh \
+        /etc/s6-overlay/s6-rc.d/cron/run \
+        /etc/s6-overlay/s6-rc.d/sshd/run \
+        /usr/local/sbin/start-*
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost/user/login || exit 1

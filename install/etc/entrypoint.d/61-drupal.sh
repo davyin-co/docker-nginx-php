@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# 61-davyin-drupal.sh — Drupal site & nginx runtime configuration.
+# 61-drupal.sh — Drupal site & nginx runtime configuration.
 #
 # Runs AFTER serversideup's 10-init-webserver-config.sh (which renders
 # /etc/nginx/nginx.conf from the template), still before /init starts s6,
@@ -99,7 +99,7 @@ fi
 if [ -n "$TIMEOUT" ]; then
     sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" "$SITE_CONF"
     # client_body_timeout / send_timeout are valid at http context
-    cat > /etc/nginx/conf.d/zz-davyin-timeout.conf <<EOF
+    cat > /etc/nginx/conf.d/zz-timeout.conf <<EOF
 client_body_timeout ${TIMEOUT};
 send_timeout ${TIMEOUT};
 EOF
@@ -123,7 +123,7 @@ fi
 # --- Drupal files permission fix ---
 case "$DRUPAL_FILES_PERM_FIXED" in
     [Tt][Rr][Uu][Ee]|[Tt]rue|1|[Yy][Ee][Ss])
-        echo "👉 (davyin-drupal): Fixing Drupal files permissions..."
+        echo "👉 (drupal): Fixing Drupal files permissions..."
         if [ -d "/var/www/html/sites/default/files" ]; then
             cd /var/www/html/sites/default/files || exit 0
             find . -not -path "*.snapshot" -mindepth 1 -maxdepth 1 -exec chown -R www-data:www-data {} + 2>/dev/null

@@ -40,7 +40,7 @@ docker build -f Dockerfile.debian.template \
   - php.ini / pool 配置是 `${VAR}` 占位符模板，由 PHP/php-fpm 启动时从进程环境展开
   - php-fpm pool `pm.*` 参数原生可用（无付费锁定）；但本镜像的 canonical 变量是
     nfrastack 时代的 `PHP_FPM_PROCESS_MANAGER/PHP_FPM_MAX_CHILDREN/...`（DSF 平台注入的这组），
-    由 `06-davyin-compat.sh` 无条件渲染进 pool 配置——serversideup 原生 `PHP_FPM_PM_*` 会被
+    由 `06-compat.sh` 无条件渲染进 pool 配置——serversideup 原生 `PHP_FPM_PM_*` 会被
     ENV 里的 canonical 默认值覆盖，不要使用
   - nginx.conf 由 `10-init-webserver-config.sh` 从 `nginx.conf.template` envsubst 渲染；
     `/etc/nginx/conf.d/default.conf` 若已存在（本镜像自带 Drupal 配置）则保留不覆盖
@@ -58,13 +58,13 @@ docker build -f Dockerfile.debian.template \
 - serversideup 自带：0-container-info、1-log-output-level、5-fpm-pool-user、5-generate-ssl、
   10-init-webserver-config、50-laravel-automations
 - 本镜像的脚本（`install/etc/entrypoint.d/`）：
-  - `06-davyin-compat.sh` — 旧变量名翻译：sed 替换 pool/php.ini 模板里的 `${VAR}` 占位符为具体值
-  - `61-davyin-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径）
-  - `62-davyin-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/davyin`）
-  - `63-davyin-sshd.sh` — SSH 用户/密钥/host key；`USER_NAME` 为空时 `rm contents.d/davyin-sshd` 禁用服务
-  - `65-davyin-logrotate.sh` — 渲染 `/etc/logrotate.d/davyin`
-- 自有 s6 longrun 服务：`davyin-cron`、`davyin-sshd`
-  （run 脚本用 `#!/command/execlineb -P` + `with-contenv`，调用 `/usr/local/sbin/davyin-*` 包装脚本）
+  - `06-compat.sh` — 旧变量名翻译：sed 替换 pool/php.ini 模板里的 `${VAR}` 占位符为具体值
+  - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径）
+  - `62-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/custom`）
+  - `63-sshd.sh` — SSH 用户/密钥/host key；`USER_NAME` 为空时 `rm contents.d/sshd` 禁用服务
+  - `65-logrotate.sh` — 渲染 `/etc/logrotate.d/custom`
+- 自有 s6 longrun 服务：`cron`、`sshd`
+  （run 脚本用 `#!/command/execlineb -P` + `with-contenv`，调用 `/usr/local/sbin/start-*` 包装脚本）
 
 ### Directory Mapping
 `install/` 目录通过 `ADD install /` 拷入容器：
@@ -74,7 +74,7 @@ docker build -f Dockerfile.debian.template \
 - `install/etc/nginx/extra/subdir.conf` → DRUPAL_SUBDIR(S) 运行时生成位置
 - `install/etc/nginx/vhost.d/` → 用户自定义 pre-/post-*.conf 扩展点
 - `install/etc/s6-overlay/s6-rc.d/` → 自有服务定义 + user/contents.d 注册
-- `install/etc/ssh/sshd_config.d/00-davyin.conf` → SSH 配置（Port 2222 等）
+- `install/etc/ssh/sshd_config.d/00-custom.conf` → SSH 配置（Port 2222 等）
 - `install/etc/profile.d/pathenv.sh` → 登录 shell 的 PATH + PS1（红 user/青 cwd 双行提示符）
 - `install/etc/bash/ps1.sh` → 非登录交互 bash 的 PS1
   （Alpine 由 /etc/bash/bashrc 的 `*.sh` 循环自动加载；Debian 由 Dockerfile 向
@@ -95,7 +95,7 @@ sodium, opcache 等。冒烟脚本会逐项校验全部 19 个扩展）
 
 ### SSH Server
 - `USER_NAME` 设置时启用（默认 ENV `USER_NAME=dsf`），监听 2222
-- `63-davyin-sshd.sh` 负责建用户/host key/密钥；USER_NAME 为空时从 s6 contents.d 移除服务
+- `63-sshd.sh` 负责建用户/host key/密钥；USER_NAME 为空时从 s6 contents.d 移除服务
 - 公钥在 `/etc/ssh/authorized_keys.d/<user>`（不用 ~/.ssh：webroot 挂载卷的属主问题
   会触发 StrictModes 拒绝；且 sshd 以目标用户身份读 authorized_keys，文件必须属该用户）
 - `useradd` 新建账号默认锁定（shadow 为 `!`），必须 `usermod -p '*'` 否则公钥登录也被拒
@@ -186,11 +186,11 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
 - http 级其他指令：可在 default.conf 同目录加 `zz-*.conf`（conf.d 在 http context include）
 
 ### Adding an init script
-1. 放到 `install/etc/entrypoint.d/{NN}-davyin-{name}.sh`（POSIX sh，必须 exit 0）
+1. 放到 `install/etc/entrypoint.d/{NN}-{name}.sh`（POSIX sh，必须 exit 0）
 2. 序号参考：serversideup 自带 0/1/5/10/50；我们的 php 类放 06，nginx 类放 61（必须在 10 之后）
-3. Dockerfile 的 chmod +x 步骤会覆盖 `*-davyin-*.sh`
+3. Dockerfile 的 chmod +x 步骤会覆盖 `*.sh`
 
 ### Adding a long-running service
-1. `install/etc/s6-overlay/s6-rc.d/davyin-{name}/`：`run`（execline + with-contenv）+ `type`（longrun）
-2. 注册：`install/etc/s6-overlay/s6-rc.d/user/contents.d/davyin-{name}`（空文件）
-3. 条件启动：在对应 entrypoint 脚本里 `rm contents.d/davyin-{name}`（entrypoint 先于 s6 编译运行）
+1. `install/etc/s6-overlay/s6-rc.d/{name}/`：`run`（execline + with-contenv）+ `type`（longrun）
+2. 注册：`install/etc/s6-overlay/s6-rc.d/user/contents.d/{name}`（空文件）
+3. 条件启动：在对应 entrypoint 脚本里 `rm contents.d/{name}`（entrypoint 先于 s6 编译运行）

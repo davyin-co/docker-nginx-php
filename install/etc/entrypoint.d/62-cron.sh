@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-# 62-davyin-cron.sh — render crontab from CRON_* environment variables.
+# 62-cron.sh — render crontab from CRON_* environment variables.
 #
 # Every env var starting with CRON_ becomes one crontab line, e.g.:
 #   CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron"
 # A daily logrotate job is always appended.
 #
 # Alpine (busybox crond): /etc/crontabs/root — no user column.
-# Debian (cron):          /etc/cron.d/davyin — requires user column.
+# Debian (cron):          /etc/cron.d/custom — requires user column.
 
 CRON_LINES=""
 for line in $(env | grep '^CRON_' | sort | sed 's/^CRON_[^=]*=//; s/ /%20/g'); do
@@ -32,8 +32,8 @@ else
         echo "$HEADER"
         printf '%s' "$CRON_LINES" | sed 's/^\([^ ]* [^ ]* [^ ]* [^ ]* [^ ]* \)/\1root /'
         echo "59 23 * * * root sleep 55; /usr/sbin/logrotate -f /etc/logrotate.conf >/dev/null 2>&1"
-    } > /etc/cron.d/davyin
-    chmod 0644 /etc/cron.d/davyin
+    } > /etc/cron.d/custom
+    chmod 0644 /etc/cron.d/custom
 fi
 
 exit 0

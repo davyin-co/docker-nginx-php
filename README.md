@@ -118,7 +118,7 @@ PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表�
 | `PHP_LOG_LEVEL` | PHP-FPM log level | `error` |
 
 > **说明**：`PHP_FPM_*`（nfrastack 时代的命名，DSF 平台注入的即这组）是本镜像的
-> **canonical** 变量，容器启动时由 `06-davyin-compat.sh` 渲染进 pool 配置。
+> **canonical** 变量，容器启动时由 `06-compat.sh` 渲染进 pool 配置。
 > serversideup 原生的 `PHP_FPM_PM_*` 变量会被本镜像的 ENV 默认值覆盖，**请勿使用**。
 
 ### 其他旧变量名兼容
@@ -205,18 +205,18 @@ RUN install-php-extensions mongodb
 ### Init System
 - [s6-overlay](https://github.com/just-containers/s6-overlay)（serversideup 标准结构）
 - Entrypoint scripts in `/etc/entrypoint.d/`（数字序执行，先于 s6 启动）：
-  - `06-davyin-compat.sh` — 旧变量名翻译（写具体值进 pool/php.ini 模板）
-  - `61-davyin-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/日志路径）
-  - `62-davyin-cron.sh` — 渲染 crontab（`CRON_*` + logrotate）
-  - `63-davyin-sshd.sh` — SSH 用户/密钥/host key（`USER_NAME` 为空时移除服务）
-  - `65-davyin-logrotate.sh` — 渲染 logrotate 规则
-- 自有 s6 longrun 服务：`davyin-cron`、`davyin-sshd`（基础镜像提供 `nginx`、`php-fpm`）
+  - `06-compat.sh` — 旧变量名翻译（写具体值进 pool/php.ini 模板）
+  - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/日志路径）
+  - `62-cron.sh` — 渲染 crontab（`CRON_*` + logrotate）
+  - `63-sshd.sh` — SSH 用户/密钥/host key（`USER_NAME` 为空时移除服务）
+  - `65-logrotate.sh` — 渲染 logrotate 规则
+- 自有 s6 longrun 服务：`cron`、`sshd`（基础镜像提供 `nginx`、`php-fpm`）
 
 ### Directory Structure
 ```
 /
 ├── etc/
-│   ├── entrypoint.d/              # 初始化脚本（本镜像: *-davyin-*.sh）
+│   ├── entrypoint.d/              # 初始化脚本（本镜像: *.sh）
 │   ├── nginx/
 │   │   ├── conf.d/default.conf    # Drupal server block（本镜像自带）
 │   │   ├── conf.d/drupal-maps.conf# Boost map 指令（http context）
