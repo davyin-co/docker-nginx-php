@@ -45,7 +45,7 @@ ENV TIMEZONE=Asia/Shanghai \
     DRUPAL_FILES_PERM_FIXED=FALSE \
     CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron" \
     LOGROTATE_RETAIN_DAYS=60 \
-    LOGROTATE_COMPRESSION_TYPE=NONE \
+    LOGROTATE_COMPRESSION_TYPE=ZSTD \
     HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;" \
     USER_NAME=dsf \
     SHOW_WELCOME_MESSAGE=false \
@@ -76,7 +76,8 @@ RUN for i in 1 2 3; do \
             sshpass \
             sudo \
             tzdata \
-            zip && break || { echo "apk add failed, retry $i/3"; sleep 10; }; \
+            zip \
+            zstd && break || { echo "apk add failed, retry $i/3"; sleep 10; }; \
     done && \
     rm -rf /var/cache/apk/*
 
