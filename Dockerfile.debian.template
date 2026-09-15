@@ -65,6 +65,7 @@ RUN for i in 1 2 3; do \
             cron \
             curl \
             findutils \
+            git \
             logrotate \
             mariadb-client \
             nano \
