@@ -67,6 +67,7 @@ RUN for i in 1 2 3; do \
             git \
             logrotate \
             mariadb-client \
+            mariadb-connector-c \
             nano \
             netcat-openbsd \
             openssh \
