@@ -64,7 +64,9 @@ RUN for i in 1 2 3; do \
             coreutils \
             curl \
             findutils \
+            busybox-extras \
             git \
+            iputils \
             logrotate \
             mariadb-client \
             mariadb-connector-c \
@@ -78,6 +80,7 @@ RUN for i in 1 2 3; do \
             sshpass \
             sudo \
             tzdata \
+            wget \
             zip \
             zstd && break || { echo "apk add failed, retry $i/3"; sleep 10; }; \
     done && \

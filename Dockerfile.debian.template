@@ -66,6 +66,7 @@ RUN for i in 1 2 3; do \
             curl \
             findutils \
             git \
+            iputils-ping \
             logrotate \
             mariadb-client \
             nano \
@@ -77,8 +78,10 @@ RUN for i in 1 2 3; do \
             rsync \
             sshpass \
             sudo \
+            telnet \
             tzdata \
             vim-tiny \
+            wget \
             zip \
             zstd && break || { echo "apt-get failed, retry $i/3"; sleep 10; }; \
     done
