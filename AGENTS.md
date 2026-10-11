@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Overview
 
@@ -59,12 +59,18 @@ docker build -f Dockerfile.debian.template \
   10-init-webserver-config、50-laravel-automations
 - 本镜像的脚本（`install/etc/entrypoint.d/`）：
   - `06-compat.sh` — 旧变量名翻译：sed 替换 pool/php.ini 模板里的 `${VAR}` 占位符为具体值
+  - `60-s6-register.sh` — 把 cron 注册进 base 的 user bundle（sshd 由 63 注册/移除）；
+    位置运行时探测：新 base 用 `/etc/s6-overlay/user-bundles.d/user/contents.d/`，旧 base 用
+    `/etc/s6-overlay/s6-rc.d/user/contents.d/`——**两处都定义会冲突**，同名 "user" bundle
+    互相覆盖导致上游 nginx/php-fpm 从编译结果中丢失（2026-10 实测）
   - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径）
   - `62-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/custom`）
-  - `63-sshd.sh` — SSH 用户/密钥/host key；`USER_NAME` 为空时 `rm contents.d/sshd` 禁用服务
+  - `63-sshd.sh` — SSH 用户/密钥/host key + sudo 授权（`/etc/sudoers.d/90-$USER_NAME`，NOPASSWD）；`USER_NAME` 为空时 `rm contents.d/sshd` 禁用服务
   - `65-logrotate.sh` — 渲染 `/etc/logrotate.d/custom`
 - 自有 s6 longrun 服务：`cron`、`sshd`
-  （run 脚本用 `#!/command/execlineb -P` + `with-contenv`，调用 `/usr/local/sbin/start-*` 包装脚本）
+  （run 脚本用 `#!/command/execlineb -P` + `with-contenv`，调用 `/usr/local/sbin/start-*` 包装脚本；
+  注册不在静态文件里，由 `60-s6-register.sh` / `63-sshd.sh` 在 entrypoint 阶段写 bundle contents.d，
+  原因见 60 脚本注释）
 
 ### Directory Mapping
 `install/` 目录通过 `ADD install /` 拷入容器：
@@ -95,7 +101,7 @@ sodium, opcache 等。冒烟脚本会逐项校验全部 19 个扩展）
 
 ### SSH Server
 - `USER_NAME` 设置时启用（默认 ENV `USER_NAME=dsf`），监听 2222
-- `63-sshd.sh` 负责建用户/host key/密钥；USER_NAME 为空时从 s6 contents.d 移除服务
+- `63-sshd.sh` 负责建用户/host key/密钥 + 写 sudoers drop-in 授予该用户 NOPASSWD sudo；USER_NAME 为空时从 s6 contents.d 移除服务
 - 公钥在 `/etc/ssh/authorized_keys.d/<user>`（不用 ~/.ssh：webroot 挂载卷的属主问题
   会触发 StrictModes 拒绝；且 sshd 以目标用户身份读 authorized_keys，文件必须属该用户）
 - `useradd` 新建账号默认锁定（shadow 为 `!`），必须 `usermod -p '*'` 否则公钥登录也被拒
@@ -192,5 +198,6 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
 
 ### Adding a long-running service
 1. `install/etc/s6-overlay/s6-rc.d/{name}/`：`run`（execline + with-contenv）+ `type`（longrun）
-2. 注册：`install/etc/s6-overlay/s6-rc.d/user/contents.d/{name}`（空文件）
-3. 条件启动：在对应 entrypoint 脚本里 `rm contents.d/{name}`（entrypoint 先于 s6 编译运行）
+2. 注册：在 `60-s6-register.sh`（无条件服务）或对应条件脚本（如 `63-sshd.sh`）里 touch
+   bundle contents.d 文件；位置由 60 脚本的探测逻辑决定（新 base：`/etc/s6-overlay/user-bundles.d/user/contents.d/`）
+3. 条件启动：在对应 entrypoint 脚本里 `rm` contents.d 里的 `{name}`（entrypoint 先于 s6 编译运行）

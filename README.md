@@ -292,6 +292,11 @@ Ensure `USER_NAME` environment variable is set:
 docker exec <container> env | grep USER_NAME
 ```
 
+### SSH 用户 sudo 权限
+登录用户默认拥有完整 sudo 权限（`/etc/sudoers.d/90-$USER_NAME`，NOPASSWD），
+可直接 `sudo su -` 切换到 root。容器本身以 root 运行（`docker exec` 即可拿到
+root），故此授权不引入额外风险。
+
 ### PHP can't read environment variables
 php-fpm pool 已配置 `clear_env = no`。注意通过 SSH/手动 exec 的进程只能看到
 镜像 ENV 默认值（sshd 会过滤环境），运行时 `-e` 覆盖仅作用于 s6 管理的服务。

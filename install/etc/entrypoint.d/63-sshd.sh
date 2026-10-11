@@ -4,7 +4,8 @@
 #
 # Enabled when USER_NAME is set; otherwise the sshd s6 service is
 # removed from the boot bundle (this script runs before /init, so editing
-# /etc/s6-overlay/s6-rc.d/user/contents.d/ is still effective).
+# contents.d is still effective). The user bundle lives in one of two
+# locations depending on base version — see 60-s6-register.sh.
 #
 # Variables:
 #   USER_NAME        SSH login user (created if missing; home /var/www/html)
@@ -13,14 +14,24 @@
 #   PUBLIC_KEY       public key content for authorized_keys
 #   PUBLIC_KEY_FILE  path to a file containing the public key
 
-S6_SERVICE_LINK="/etc/s6-overlay/s6-rc.d/user/contents.d/sshd"
+NEW_BUNDLE="/etc/s6-overlay/user-bundles.d/user/contents.d/sshd"
+OLD_BUNDLE="/etc/s6-overlay/s6-rc.d/user/contents.d/sshd"
 
 if [ -z "$USER_NAME" ]; then
-    rm -f "$S6_SERVICE_LINK"
+    rm -f "$NEW_BUNDLE" "$OLD_BUNDLE"
     exit 0
 fi
 
 echo "👉 (sshd): Enabling SSH server for user '${USER_NAME}' on port 2222"
+
+# Register the service in the base's user bundle (same location logic as
+# 60-s6-register.sh; must not define both — the two "user" bundles conflict).
+if [ -d /etc/s6-overlay/user-bundles.d/user/contents.d ]; then
+    touch "$NEW_BUNDLE"
+else
+    mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
+    touch "$OLD_BUNDLE"
+fi
 
 # Host keys
 mkdir -p /etc/ssh
@@ -31,6 +42,17 @@ if ! id "$USER_NAME" >/dev/null 2>&1; then
     useradd -u 1000 -M -d /var/www/html -s /bin/bash -G www-data "$USER_NAME" 2>/dev/null \
         || useradd -M -d /var/www/html -s /bin/bash -G www-data "$USER_NAME"
 fi
+
+# Grant the login user full sudo. The container already runs as root (root is
+# reachable via `docker exec`), so this adds no real privilege; NOPASSWD keeps
+# key-only accounts (no password set) able to sudo.
+SUDOERS_DROPIN="/etc/sudoers.d/90-${USER_NAME}"
+echo "${USER_NAME} ALL=(ALL:ALL) NOPASSWD: ALL" > "$SUDOERS_DROPIN"
+chmod 440 "$SUDOERS_DROPIN"
+# Make sure the drop-in dir is actually included (both Debian and Alpine
+# default sudoers do, but don't rely on it).
+grep -qsE '^[@#]include(dir)?[[:space:]]+/etc/sudoers\.d' /etc/sudoers || \
+    echo '@includedir /etc/sudoers.d' >> /etc/sudoers
 
 SSHD_DROPIN="/etc/ssh/sshd_config.d/00-custom.conf"
 
