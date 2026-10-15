@@ -59,6 +59,7 @@ docker build -f Dockerfile.debian.template \
   10-init-webserver-config、50-laravel-automations
 - 本镜像的脚本（`install/etc/entrypoint.d/`）：
   - `06-compat.sh` — 旧变量名翻译：sed 替换 pool/php.ini 模板里的 `${VAR}` 占位符为具体值
+    （同时渲染 `/etc/drush/drush.yml` 的 `${DRUSH_SQL_EXTRA}`；pgsql 站点须将该变量置空，psql 不兼容 `--skip-ssl`）
   - `60-s6-register.sh` — 把 cron 注册进 base 的 user bundle（sshd 由 63 注册/移除）；
     位置运行时探测：新 base 用 `/etc/s6-overlay/user-bundles.d/user/contents.d/`，旧 base 用
     `/etc/s6-overlay/s6-rc.d/user/contents.d/`——**两处都定义会冲突**，同名 "user" bundle

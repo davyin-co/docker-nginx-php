@@ -2,15 +2,15 @@ command:
   sql:
     cli:
       options:
-        extra: "--skip-ssl"
+        extra: "${DRUSH_SQL_EXTRA}"
     connect:
       options:
-        extra: "--skip-ssl"
+        extra: "${DRUSH_SQL_EXTRA}"
     query:
       options:
-        extra: "--skip-ssl"
+        extra: "${DRUSH_SQL_EXTRA}"
     dump:
       options:
-        extra: "--skip-ssl"
-        extra-dump: "--skip-ssl"
+        extra: "${DRUSH_SQL_EXTRA}"
+        extra-dump: "${DRUSH_SQL_EXTRA}"
         structure-tables-list: cache,cache_*,http_client_log,search_index,watchdog

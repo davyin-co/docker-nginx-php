@@ -43,6 +43,7 @@ ENV TIMEZONE=Asia/Shanghai \
     NGINX_HTTP_PORT=80 \
     NGINX_WORKER_PROCESSES=auto \
     DRUPAL_FILES_PERM_FIXED=FALSE \
+    DRUSH_SQL_EXTRA="--skip-ssl" \
     CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron" \
     LOGROTATE_RETAIN_DAYS=60 \
     LOGROTATE_COMPRESSION_TYPE=ZSTD \
@@ -75,6 +76,7 @@ RUN for i in 1 2 3; do \
             openssh-server \
             openssh-sftp-server \
             patch \
+            postgresql-client \
             rsync \
             sshpass \
             sudo \

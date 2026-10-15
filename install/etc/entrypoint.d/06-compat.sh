@@ -112,4 +112,15 @@ if [ -f "$NGINX_TEMPLATE" ] && grep -q '^worker_processes ' "$NGINX_TEMPLATE"; t
     sed -i "s|^worker_processes .*|worker_processes  ${WORKER_PROCESSES};|" "$NGINX_TEMPLATE"
 fi
 
+# --- Drush sql:* client options ---
+# ${DRUSH_SQL_EXTRA} is injected into the global drush.yml for
+# sql:cli/connect/query/dump (default --skip-ssl: MariaDB 11+ clients try
+# SSL by default and fail against non-SSL servers). psql does not understand
+# --skip-ssl, so PostgreSQL sites must clear it (-e DRUSH_SQL_EXTRA=).
+DRUSH_YML="/etc/drush/drush.yml"
+if [ -f "$DRUSH_YML" ] && grep -q '${DRUSH_SQL_EXTRA}' "$DRUSH_YML"; then
+    # Note: ${VAR-word} (no colon) so an explicit empty value passes through
+    sed -i "s|\${DRUSH_SQL_EXTRA}|${DRUSH_SQL_EXTRA---skip-ssl}|g" "$DRUSH_YML"
+fi
+
 exit 0

@@ -94,6 +94,7 @@ services:
 | `DRUPAL_SUBDIR` | Single subdirectory path | (empty) |
 | `DRUPAL_SUBDIRS` | Multiple subdirectories (comma-separated) | (empty) |
 | `DRUPAL_FILES_PERM_FIXED` | Fix Drupal files permissions on startup | `FALSE` |
+| `DRUSH_SQL_EXTRA` | 注入 `drush sql:cli/connect/query/dump` 的客户端选项（`--skip-ssl` 为 MariaDB 11+ 客户端兼容，**PostgreSQL 站点须置空**，psql 不认识该选项） | `--skip-ssl` |
 
 ### PHP Configuration
 
