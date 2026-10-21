@@ -254,12 +254,20 @@ COPY --from=runtime-deps /out/bin/php-fpm-healthcheck /usr/local/bin/php-fpm-hea
 ##     global 504s for hours on the CVE-2026-109618/109619 release day)
 ##   - pinned tags make rebuilds reproducible
 ## Versions mirror pecl latest-stable at pin time (queried via the pecl REST
-## API). Bundled extensions compile from the PHP source tree (no download).
+## API), EXCEPT igbinary on PHP 8.5: 3.2.16 references php_smart_string.h,
+## which PHP 8.5 removed — 3.2.17RC1 ("Support PHP 8.5") is what pecl itself
+## installs there, so it is the pin for 8.5 (matches serversideup-based images).
+## Bundled extensions compile from the PHP source tree (no download).
 ## Retries: GitHub/s6/PECL have multi-hour outages under global rebuild
 ## events — back off generously.
-RUN for i in 1 2 3 4 5; do \
+RUN set -e; \
+    IGBINARY_URL="https://codeload.github.com/igbinary/igbinary/tar.gz/refs/tags/3.2.16"; \
+    if [ "$PHP_VERSION" = "8.5" ]; then \
+        IGBINARY_URL="https://codeload.github.com/igbinary/igbinary/tar.gz/refs/tags/3.2.17RC1"; \
+    fi; \
+    for i in 1 2 3 4 5; do \
         install-php-extensions \
-            https://codeload.github.com/igbinary/igbinary/tar.gz/refs/tags/3.2.16 \
+            "$IGBINARY_URL" \
             https://codeload.github.com/msgpack/msgpack-php/tar.gz/refs/tags/v3.0.1 \
             https://codeload.github.com/php-memcached-dev/php-memcached/tar.gz/refs/tags/v3.4.0 \
             https://codeload.github.com/Imagick/imagick/tar.gz/refs/tags/3.8.1 \
