@@ -10,6 +10,13 @@ This repository builds multi-architecture Docker images (linux/amd64, linux/arm6
 serversideup 镜像 = 官方 PHP 镜像 + s6-overlay + install-php-extensions + 全免费的环境变量配置。
 nfrastack 时代的备份见 `backup/nfrastack-base` 分支。
 
+**官方基座草案（2026-10-21 起并行验证）**：`Dockerfile.official.template` +
+`base/`（自研运行时：entrypoint/s6 服务/pool 模板，install/ 零改动）直接基于官方 `php`
+镜像构建，绕过 serversideup 中间层；PECL 扩展走 GitHub 钉版本源码（pecl CDN 故障单点）。
+CI 发 `8.x-{alpine,debian}-official` tag（workflow: docker-image-official.yml），
+稳定后再考虑切换正式 tag；旧基座模板保留 3 个月+ 作回退。
+详见 `docs/plan-official-php-base.md`。
+
 ## Build Commands
 
 ### Alpine variant

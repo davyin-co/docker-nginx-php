@@ -1,0 +1,33 @@
+worker_processes  auto;
+pid        /run/nginx.pid;
+error_log  ${NGINX_ERROR_LOG};
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  ${NGINX_ACCESS_LOG}  main;
+
+    sendfile        on;
+    tcp_nopush      on;
+    keepalive_timeout  65;
+    server_tokens   ${NGINX_SERVER_TOKENS};
+
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+
+    fastcgi_buffers ${NGINX_FASTCGI_BUFFERS};
+    fastcgi_buffer_size ${NGINX_FASTCGI_BUFFER_SIZE};
+
+    gzip  on;
+
+    # Drupal site (shipped by this image as /etc/nginx/conf.d/default.conf)
+    include /etc/nginx/conf.d/*.conf;
+}

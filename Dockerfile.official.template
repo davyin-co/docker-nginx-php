@@ -1,0 +1,368 @@
+# syntax=docker/dockerfile:1
+#
+# nginx + php-fpm image built DIRECTLY on the official php images.
+# Draft of the "official-php base" migration (see docs/plan-official-php-base.md).
+#
+# Motivation: with serversideup/php as base, emergency PHP fixes travel
+# php.net -> docker-library (Jenkins) -> serversideup (manual dispatch) -> us.
+# This template removes the middle layer: whenever docker-library publishes
+# the patched tags we rebuild immediately, and BASE_TAG can pin the exact
+# patch release (e.g. 8.4.27-fpm-alpine3.24).
+#
+# What replaces serversideup's layer (all under base/, self-authored):
+#   - s6-overlay (fetched at build time, pinned version)
+#   - dsf-entrypoint (entrypoint.d runner; drop-in equivalent of upstream's)
+#   - php.ini / fpm pool ${VAR} templates (self-authored; active directives
+#     byte-identical to the serversideup-based image, same paths and
+#     placeholder names, so 06-compat.sh and the runtime placeholder
+#     expansion contract are unchanged; no third-party GPL content)
+#
+# Build:
+#   docker build -f Dockerfile.official.template \
+#     --build-arg BASE_TAG=8.4-fpm-alpine3.24 \
+#     --build-arg PHP_VERSION=8.4 \
+#     -t your-image-name:8.4-alpine .
+#   docker build -f Dockerfile.official.template \
+#     --build-arg BASE_TAG=8.4-fpm-bookworm \
+#     --build-arg PHP_VERSION=8.4 \
+#     --build-arg VARIANT=debian \
+#     -t your-image-name:8.4-debian .
+
+ARG BASE_TAG=8.4-fpm-alpine3.24
+ARG VARIANT=alpine
+ARG PHP_VERSION=8.4
+ARG S6_VERSION=v3.2.3.2
+ARG INSTALL_PHP_EXTENSIONS_VERSION=2.12.0
+
+############################
+# Stage: fetch runtime bits
+############################
+FROM alpine:3.24 AS runtime-deps
+ARG S6_VERSION
+ARG INSTALL_PHP_EXTENSIONS_VERSION
+ARG TARGETARCH
+
+RUN apk add --no-cache curl xz
+
+RUN set -eux; \
+    case "$TARGETARCH" in \
+        amd64) S6_ARCH=x86_64 ;; \
+        arm64) S6_ARCH=aarch64 ;; \
+        *) echo "unsupported TARGETARCH=$TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    mkdir -p /out/s6 /out/bin; \
+    curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -xJp -C /out/s6; \
+    curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" | tar -xJp -C /out/s6; \
+    curl -fsSL "https://github.com/mlocati/docker-php-extension-installer/releases/download/${INSTALL_PHP_EXTENSIONS_VERSION}/install-php-extensions" -o /out/bin/install-php-extensions; \
+    chmod +x /out/bin/install-php-extensions; \
+    curl -fsSL "https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/v0.6.0/php-fpm-healthcheck" -o /out/bin/php-fpm-healthcheck; \
+    chmod +x /out/bin/php-fpm-healthcheck
+
+############################
+# Main image
+############################
+FROM php:${BASE_TAG}
+
+ARG PHP_VERSION
+ARG VARIANT
+ARG DRUSH_VERSION=8.4.12
+
+# The official php images run as www-data; we need root for sshd, cron,
+# logrotate and the entrypoint.d config rewrites. php-fpm children still run
+# as nginx:www-data (PHP_FPM_CHILD_PROCESS_* below).
+USER root
+
+# ENV defaults = serversideup fpm-nginx defaults (required by the vendored
+# ${VAR} templates) + this repo's canonical overrides (identical values to
+# Dockerfile.alpine.template / Dockerfile.debian.template).
+ENV APP_BASE_DIR=/var/www/html \
+    LOG_OUTPUT_LEVEL=warn \
+    HEALTHCHECK_PATH="/healthcheck" \
+    DISABLE_DEFAULT_CONFIG=false \
+    SHOW_WELCOME_MESSAGE=false \
+    SSL_MODE=off \
+    SSL_CERTIFICATE_FILE=/etc/ssl/private/self-signed-web.crt \
+    SSL_PRIVATE_KEY_FILE=/etc/ssl/private/self-signed-web.key \
+    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
+    S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
+    S6_KEEP_ENV=1 \
+    S6_VERBOSITY=1 \
+    NGINX_ACCESS_LOG=/www/logs/nginx/access.log \
+    NGINX_ERROR_LOG=/www/logs/nginx/error.log \
+    NGINX_FASTCGI_BUFFERS="8 8k" \
+    NGINX_FASTCGI_BUFFER_SIZE="8k" \
+    NGINX_HTTP_PORT=80 \
+    NGINX_HTTPS_PORT=8443 \
+    NGINX_SERVER_TOKENS=off \
+    NGINX_CLIENT_MAX_BODY_SIZE=2G \
+    NGINX_WORKER_PROCESSES=auto \
+    PHP_DATE_TIMEZONE=Asia/Shanghai \
+    PHP_DISABLE_FUNCTIONS="" \
+    PHP_DISPLAY_ERRORS=Off \
+    PHP_DISPLAY_STARTUP_ERRORS=Off \
+    PHP_ERROR_LOG=/www/logs/php/error.log \
+    PHP_ERROR_REPORTING="22527" \
+    PHP_FILE_UPLOADS="On" \
+    PHP_HTML_ERRORS="On" \
+    PHP_LOG_LEVEL=error \
+    PHP_MAX_EXECUTION_TIME=180 \
+    PHP_MAX_FILE_UPLOADS=20 \
+    PHP_MAX_INPUT_TIME="-1" \
+    PHP_MAX_INPUT_VARS=1000 \
+    PHP_MEMORY_LIMIT=1024M \
+    PHP_OPCACHE_ENABLE=1 \
+    PHP_OPCACHE_ENABLE_CLI=1 \
+    PHP_OPCACHE_ENABLE_FILE_OVERRIDE=0 \
+    PHP_OPCACHE_FORCE_RESTART_TIMEOUT=180 \
+    PHP_OPCACHE_INTERNED_STRINGS_BUFFER=32 \
+    PHP_OPCACHE_JIT=off \
+    PHP_OPCACHE_JIT_BUFFER_SIZE=0 \
+    PHP_OPCACHE_MAX_ACCELERATED_FILES=32531 \
+    PHP_OPCACHE_MEMORY_CONSUMPTION=256 \
+    PHP_OPCACHE_PRELOAD="" \
+    PHP_OPCACHE_PRELOAD_USER="" \
+    PHP_OPCACHE_REVALIDATE_FREQ=2 \
+    PHP_OPCACHE_SAVE_COMMENTS=1 \
+    PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 \
+    PHP_OPEN_BASEDIR="" \
+    PHP_POST_MAX_SIZE=2G \
+    PHP_REALPATH_CACHE_SIZE=4096K \
+    PHP_REALPATH_CACHE_TTL=600 \
+    PHP_SESSION_COOKIE_HTTPONLY=On \
+    PHP_SESSION_COOKIE_SECURE=false \
+    PHP_UPLOAD_MAX_FILE_SIZE=2G \
+    PHP_ZEND_DETECT_UNICODE="" \
+    PHP_ZEND_MULTIBYTE=Off \
+    PHP_FPM_PM_CONTROL=dynamic \
+    PHP_FPM_PM_MAX_CHILDREN=40 \
+    PHP_FPM_PM_MAX_REQUESTS=0 \
+    PHP_FPM_PM_MAX_SPARE_SERVERS=8 \
+    PHP_FPM_PM_MIN_SPARE_SERVERS=2 \
+    PHP_FPM_PM_START_SERVERS=4 \
+    PHP_FPM_PM_STATUS_PATH="/status" \
+    PHP_FPM_PROCESS_MANAGER=dynamic \
+    PHP_FPM_MAX_CHILDREN=40 \
+    PHP_FPM_START_SERVERS=4 \
+    PHP_FPM_MIN_SPARE_SERVERS=2 \
+    PHP_FPM_MAX_SPARE_SERVERS=8 \
+    PHP_FPM_MAX_REQUESTS=0 \
+    PHP_FPM_POOL_NAME=www \
+    PHP_FPM_PROCESS_CONTROL_TIMEOUT=10s \
+    PHP_FPM_CHILD_PROCESS_USER=nginx \
+    PHP_FPM_CHILD_PROCESS_GROUP=www-data \
+    TIMEZONE=Asia/Shanghai \
+    DRUPAL_FILES_PERM_FIXED=FALSE \
+    DRUSH_SQL_EXTRA="--skip-ssl" \
+    CRON_DRUPAL_CRON="0 1 * * * drush -r /var/www/html/docroot/ cron" \
+    LOGROTATE_RETAIN_DAYS=60 \
+    LOGROTATE_COMPRESSION_TYPE=ZSTD \
+    HTTP_HEADER_X_CONTENT_SECURITY_POLICY="default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.google.com *.baidu.com unpkg.com *.gstatic.com *.googleapis.com *.jsdelivr.net *.cloudflare.com d3js.org *.cookielaw.org *.youtube.com youtu.be *.youtu.be *.googleusercontent.com *.bootstrapcdn.com *.googletagmanager.com;" \
+    USER_NAME=dsf \
+    PATH=/var/www/html/vendor/bin:/var/www/html/bin:$PATH
+
+# Optional Alpine mirror for unreliable networks (e.g. mirrors.aliyun.com)
+ARG ALPINE_MIRROR=""
+RUN if [ "$VARIANT" = "alpine" ] && [ -n "$ALPINE_MIRROR" ]; then \
+        sed -i "s|dl-cdn.alpinelinux.org|${ALPINE_MIRROR}|g" /etc/apk/repositories; \
+    fi
+
+# OS packages. Reuses the existing variants' lists; adds nginx, gettext
+# (envsubst for 07-render-nginx-conf.sh) and fcgi (php-fpm-healthcheck).
+RUN if [ "$VARIANT" = "alpine" ]; then \
+        for i in 1 2 3; do \
+            apk add --no-cache \
+                bash \
+                busybox-extras \
+                ca-certificates \
+                coreutils \
+                curl \
+                fcgi \
+                findutils \
+                gettext \
+                git \
+                iputils \
+                logrotate \
+                mariadb-client \
+                mariadb-connector-c \
+                nano \
+                netcat-openbsd \
+                nginx \
+                openssh \
+                openssh-sftp-server \
+                patch \
+                postgresql-client \
+                rsync \
+                shadow \
+                sshpass \
+                sudo \
+                tzdata \
+                wget \
+                zip \
+                zstd && break || { echo "apk add failed, retry $i/3"; sleep 10; }; \
+        done; \
+        rm -rf /var/cache/apk/*; \
+    else \
+        for i in 1 2 3; do \
+            apt-get update && \
+            apt-get install -y --no-install-recommends \
+                bash \
+                ca-certificates \
+                cron \
+                curl \
+                findutils \
+                gettext-base \
+                git \
+                iputils-ping \
+                libfcgi-bin \
+                logrotate \
+                mariadb-client \
+                nano \
+                netcat-openbsd \
+                nginx \
+                openssh-client \
+                openssh-server \
+                openssh-sftp-server \
+                patch \
+                postgresql-client \
+                procps \
+                rsync \
+                sshpass \
+                sudo \
+                telnet \
+                tzdata \
+                vim-tiny \
+                wget \
+                zip \
+                zstd && break || { echo "apt-get failed, retry $i/3"; sleep 10; }; \
+        done; \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# s6-overlay + helpers from the fetch stage
+COPY --from=runtime-deps /out/s6/ /
+COPY --from=runtime-deps /out/bin/install-php-extensions /usr/local/bin/install-php-extensions
+COPY --from=runtime-deps /out/bin/php-fpm-healthcheck /usr/local/bin/php-fpm-healthcheck
+
+## PHP extensions.
+##
+## The official php base ships far fewer extensions than serversideup did:
+## sodium/opcache are bundled, everything else must be installed here.
+##
+## Source pinning: the seven PECL-hosted extensions are installed from pinned
+## GitHub release archives instead of pecl.php.net. Reasons:
+##   - pecl.php.net's tarball CDN is a single point of failure (returned
+##     global 504s for hours on the CVE-2026-109618/109619 release day)
+##   - pinned tags make rebuilds reproducible
+## Versions mirror pecl latest-stable at pin time (queried via the pecl REST
+## API). Bundled extensions compile from the PHP source tree (no download).
+## Retries: GitHub/s6/PECL have multi-hour outages under global rebuild
+## events — back off generously.
+RUN for i in 1 2 3 4 5; do \
+        install-php-extensions \
+            https://codeload.github.com/igbinary/igbinary/tar.gz/refs/tags/3.2.16 \
+            https://codeload.github.com/msgpack/msgpack-php/tar.gz/refs/tags/v3.0.1 \
+            https://codeload.github.com/php-memcached-dev/php-memcached/tar.gz/refs/tags/v3.4.0 \
+            https://codeload.github.com/Imagick/imagick/tar.gz/refs/tags/3.8.1 \
+            https://codeload.github.com/krakjoe/apcu/tar.gz/refs/tags/v5.1.28 \
+            https://codeload.github.com/php/pecl-file_formats-yaml/tar.gz/refs/tags/2.3.0 \
+            ldap \
+            bz2 \
+            bcmath \
+            exif \
+            gd \
+            imap \
+            intl \
+            mysqli \
+            pgsql \
+            pdo_mysql \
+            pdo_pgsql \
+            zip && break || { echo "install-php-extensions failed, retry $i/5 in 60s"; sleep 60; }; \
+    done && \
+    ## Fail loudly if any extension did not actually get enabled
+    for ext in igbinary msgpack memcached imagick ldap bz2 \
+               apcu bcmath exif gd imap intl mysqli pgsql \
+               pdo_mysql pdo_pgsql zip; do \
+        php -m | grep -qix "$ext" || { echo "ERROR: PHP extension '$ext' missing after install"; exit 1; }; \
+    done
+
+## redis: phpredis' GitHub archive cannot be installed directly because
+## liblzf is a git submodule (empty dir in the archive → pecl package.xml
+## validation fails). Merge the pinned submodule tree into the source and
+## hand install-php-extensions the local directory (it accepts a source dir
+## and applies its redis-specific build handling).
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+        rm -rf /tmp/redis-src; \
+        mkdir -p /tmp/redis-src; \
+        curl -fsSL "https://codeload.github.com/phpredis/phpredis/tar.gz/refs/tags/6.3.0" | tar xz --strip-components=1 -C /tmp/redis-src && \
+        curl -fsSL "https://codeload.github.com/nemequ/liblzf/tar.gz/fb25820c3c0aeafd127956ae6c115063b47e459a" | tar xz --strip-components=1 -C /tmp/redis-src/liblzf && \
+        install-php-extensions /tmp/redis-src && break || { echo "redis install failed, retry $i/5 in 60s"; sleep 60; }; \
+    done; \
+    rm -rf /tmp/redis-src; \
+    ## Final gate: the full production extension set (parity with the
+    ## serversideup-based image, which ships redis/zip/pdo_* out of the box)
+    for ext in apcu bcmath bz2 exif gd igbinary imagick imap intl ldap \
+               memcached msgpack mysqli pdo_mysql pdo_pgsql pgsql redis yaml zip; do \
+        php -m | grep -qix "$ext" || { echo "ERROR: PHP extension '$ext' missing after install"; exit 1; }; \
+    done
+
+## drush — only needed on PHP < 8.3; on 8.3+ projects pull drush via composer
+RUN if [ "$(printf '%s\n' "8.3" "${PHP_VERSION}" | sort -V | head -n1)" != "8.3" ]; then \
+        curl -fsSL -o /usr/local/bin/drush "https://github.com/drush-ops/drush/releases/download/${DRUSH_VERSION}/drush.phar" && \
+        chmod +x /usr/local/bin/drush && \
+        drush core-status; \
+    fi
+
+# Run nginx workers as nginx(80):www-data(82 alpine / 33 debian), matching the
+# nfrastack-era identity so ownership of host-mounted logs/sites stays
+# consistent. Distro nginx on Debian has no `nginx` user (workers default to
+# www-data), so create it first. uid 80 is free in the base image.
+RUN if ! id nginx >/dev/null 2>&1; then \
+        useradd -u 80 -g www-data -M -s /usr/sbin/nologin nginx 2>/dev/null || \
+        adduser -u 80 -D -H -G www-data nginx; \
+    fi && \
+    usermod -u 80 -g www-data nginx
+
+# Replace the distro nginx main config with our template (rendered at
+# container start by 07-render-nginx-conf.sh), drop the distro default site,
+# and clear the official php image's default fpm pool configs (same approach
+# as serversideup) — our pool conf from base/ is the single pool definition.
+RUN rm -f /etc/nginx/nginx.conf && \
+    rm -f /usr/local/etc/php-fpm.d/*.conf && \
+    if [ "$VARIANT" = "alpine" ]; then \
+        rm -rf /etc/nginx/http.d /etc/nginx/conf.d/default.conf; \
+    else \
+        rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf; \
+    fi
+
+ADD base /
+ADD install /
+
+# The template ships without a user directive; pin the worker identity the
+# same way the serversideup-based templates do.
+RUN sed -i '1i user nginx www-data;' /etc/nginx/nginx.conf.template && \
+    mkdir -p /www/logs/nginx /www/logs/php /etc/nginx/extra /var/cache/nginx && \
+    chown -R nginx:www-data /var/cache/nginx && \
+    chmod +x /etc/entrypoint.d/*.sh \
+        /usr/local/bin/dsf-entrypoint \
+        /etc/s6-overlay/s6-rc.d/cron/run \
+        /etc/s6-overlay/s6-rc.d/sshd/run \
+        /etc/s6-overlay/s6-rc.d/php-fpm/run \
+        /etc/s6-overlay/s6-rc.d/php-fpm/data/check \
+        /etc/s6-overlay/s6-rc.d/nginx/run \
+        /etc/s6-overlay/s6-rc.d/nginx/data/check \
+        /usr/local/sbin/start-*
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
+    CMD curl -f http://localhost/user/login || exit 1
+
+WORKDIR /var/www/html
+EXPOSE 80 2222
+
+ENTRYPOINT ["dsf-entrypoint"]
+
+# Graceful shutdown (same choice as serversideup, see
+# https://github.com/just-containers/s6-overlay/issues/586)
+STOPSIGNAL SIGQUIT
+
+CMD ["/init"]

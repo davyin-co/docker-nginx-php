@@ -1,0 +1,49 @@
+#!/bin/sh
+# dsf-entrypoint — container entrypoint for the official-php base image.
+#
+# Equivalent of serversideup's docker-php-serversideup-entrypoint, rewritten
+# for this repo (theirs is GPL-3.0; this is a fresh minimal implementation of
+# the same contract):
+#   1. run every /etc/entrypoint.d/*.sh in numeric order (in a subshell, so
+#      `exit` in a script cannot kill the entrypoint)
+#   2. abort on non-zero exit code
+#   3. exec the CMD ("/init" from s6-overlay)
+#
+# Unlike serversideup v5 we do NOT convert entrypoint.d scripts into s6-rc
+# oneshots: all config scripts finish before /init starts the long-running
+# services, which gives the same ordering guarantee with far less machinery.
+
+set -e
+
+if [ "${LOG_OUTPUT_LEVEL:-}" = "debug" ]; then
+    echo "🔥🔥🔥 DEBUG MODE has been set. Get ready for a ton of debug log output..."
+    set -x
+fi
+
+# Execute scripts from /etc/entrypoint.d/ in numeric order
+find /etc/entrypoint.d/ -maxdepth 1 -type f -name '*.sh' | sort -V | while IFS= read -r f; do
+    if [ "$LOG_OUTPUT_LEVEL" = "debug" ]; then
+        echo "🔄 Executing initialization script: $f"
+    fi
+    (. "$f")
+    exit_code=$?
+    if [ "$LOG_OUTPUT_LEVEL" = "debug" ]; then
+        echo "📝 Script $f completed with exit code: $exit_code"
+    fi
+    if [ "$exit_code" -ne 0 ]; then
+        echo "❌ Error: Initialization script $f failed with exit code $exit_code" >&2
+        exit "$exit_code"
+    fi
+done
+
+# Note: `exit` inside the while body exits the loop subshell, which is the
+# last component of the pipeline — so a failing init script makes the
+# pipeline return non-zero and `set -e` above aborts the entrypoint before
+# /init ever runs. Broken config can therefore never reach the services.
+
+# first arg is `-f` or `--some-option`
+if [ "${1#-}" != "$1" ]; then
+    set -- php "$@"
+fi
+
+exec "$@"

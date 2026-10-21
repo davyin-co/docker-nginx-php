@@ -1,0 +1,10 @@
+#!/command/with-contenv sh
+curl_options="--fail --location --insecure --silent --output /dev/null"
+healthcheck_url="http://localhost:${NGINX_HTTP_PORT:-80}/healthcheck"
+
+if curl $curl_options "$healthcheck_url"; then
+    exit 0
+else
+    echo "Health check waiting for NGINX + PHP-FPM to start..."
+    exit 1
+fi
