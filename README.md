@@ -109,6 +109,7 @@ PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表�
 | `PHP_POST_MAX_SIZE` | Max POST size | `2G` |
 | `PHP_OPCACHE_ENABLE` | Enable OPcache | `1` |
 | `PHP_OPCACHE_JIT` | JIT mode (`off` recommended on Alpine/musl) | `off` |
+| `PHP_OPCACHE_VALIDATE_TIMESTAMPS` | OPcache 校验文件时间戳（部署后自动刷新代码，无需重载） | `1` |
 | `PHP_FPM_PROCESS_MANAGER` | Process manager (`static`/`dynamic`/`ondemand`) | `dynamic` |
 | `PHP_FPM_MAX_CHILDREN` | Max child processes | `40` |
 | `PHP_FPM_START_SERVERS` | Initial server count | `4` |
