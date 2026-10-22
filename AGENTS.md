@@ -117,8 +117,8 @@ sodium, opcache 等。冒烟脚本会逐项校验全部 19 个扩展）
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:
-- `docker-image.yml` - Alpine builds (PHP 8.3/8.4/8.5)
-- `docker-image-debian.yml` - Debian builds (PHP 8.3/8.4/8.5)
+- `docker-image.yml` - Alpine builds (PHP 8.2/8.3/8.4/8.5)
+- `docker-image-debian.yml` - Debian builds (PHP 8.2/8.3/8.4/8.5)
 
 Triggers: push to main, weekly cron, manual dispatch.
 Builds and pushes to Docker Hub and Aliyun Container Registry.
@@ -142,6 +142,8 @@ Builds and pushes to Docker Hub and Aliyun Container Registry.
 挂载并设 `DRUPAL_WEB_ROOT=web` → 验证安装页 HTTP 200。
 注意：官方 drupal 镜像的 `/var/www/html` 是指向 `/opt/drupal/web` 的符号链接，
 直接 cp 它会丢失 vendor/ —— 必须拷 `/opt/drupal`。
+PHP 8.2 测试需用 Drupal 10 代码（默认 `drupal:11-apache` 要求 PHP >= 8.3）：
+`DRUPAL_IMAGE=drupal:10-apache ./scripts/test-local-build.sh 8.2 alpine`
 
 ### Quick test
 ```bash

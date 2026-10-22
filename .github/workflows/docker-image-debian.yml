@@ -32,6 +32,11 @@ jobs:
         array:
           [
             {
+              php_version: "8.2",
+              upstream_version: "8.2-fpm-nginx",
+              tag: "8.2-debian"
+            },
+            {
               php_version: "8.3",
               upstream_version: "8.3-fpm-nginx",
               tag: "8.3-debian"
@@ -92,6 +97,7 @@ jobs:
       matrix:
         array:
           [
+            { tag: "8.2-debian" },
             { tag: "8.3-debian" },
             { tag: "8.4-debian" },
             { tag: "8.5-debian" }

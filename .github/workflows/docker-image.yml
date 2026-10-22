@@ -32,6 +32,11 @@ jobs:
         array:
           [
             {
+              php_version: "8.2",
+              upstream_version: "8.2-fpm-nginx-alpine",
+              tag: "8.2-alpine"
+            },
+            {
               php_version: "8.3",
               upstream_version: "8.3-fpm-nginx-alpine",
               tag: "8.3-alpine"
@@ -92,6 +97,7 @@ jobs:
       matrix:
         array:
           [
+            { tag: "8.2-alpine" },
             { tag: "8.3-alpine" },
             { tag: "8.4-alpine" },
             { tag: "8.5-alpine" },
