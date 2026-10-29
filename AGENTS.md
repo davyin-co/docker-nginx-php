@@ -185,7 +185,11 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
 - **nginx.conf 在 entrypoint #10 渲染**：我们的脚本（06/61+）在其前后分工：
   06 处理 php（与 nginx 无关）；61 在 #10 之后改已渲染的 nginx.conf
 - **`docker exec` / SSH 会话只有镜像 ENV 默认值**：运行时 `-e` 覆盖只影响 s6 服务进程
-  （sshd 会过滤环境变量）。php.ini 占位符在 CLI 下按 ENV 默认值展开
+  （sshd 会过滤环境变量）。php.ini 模板由 06-compat.sh 在 entrypoint 阶段把所有 `${VAR}`
+  占位符渲染为容器启动时的 env 值（含运行时 -e 覆盖），所以 CLI/drush 与 FPM 看到一致的
+  配置（PHP_MEMORY_LIMIT、时区、上传限制等）；未设置的占位符仍由 PHP 运行时自行展开。
+  代价：`docker exec -e VAR=val` 的单进程覆盖对已渲染进 ini 的值不再生效（值在容器启动时固化，
+  与 FPM 一致）；需要临时改 CLI 配置时用 `php -d memory_limit=...`
 - **PHP_CLI 的 opcache**：`PHP_OPCACHE_ENABLE=1` 同时开 cli opcache（上游行为），无实际影响
 - **JIT 保持关闭**：`PHP_OPCACHE_JIT=off` + `BUFFER_SIZE=0`（Alpine/musl 上 Drupal 会 SIGSEGV）
 

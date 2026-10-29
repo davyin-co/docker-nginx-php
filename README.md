@@ -99,7 +99,9 @@ services:
 ### PHP Configuration
 
 PHP 的所有常用配置均由 serversideup 原生变量提供（完整列表见
-[官方文档](https://serversideup.net/open-source/docker-php/docs/reference/environment-variable-specification)），本镜像的默认值：
+[官方文档](https://serversideup.net/open-source/docker-php/docs/reference/environment-variable-specification)），本镜像的默认值。
+php.ini 中的 `${VAR}` 占位符在容器启动时统一渲染为实际 env 值，
+**php-fpm 与 CLI（drush / `docker exec` / SSH / cron）看到完全一致的配置**：
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -302,6 +304,9 @@ root），故此授权不引入额外风险。
 ### PHP can't read environment variables
 php-fpm pool 已配置 `clear_env = no`。注意通过 SSH/手动 exec 的进程只能看到
 镜像 ENV 默认值（sshd 会过滤环境），运行时 `-e` 覆盖仅作用于 s6 管理的服务。
+但 php.ini 中的 `${VAR}` 占位符已在容器启动时（entrypoint 阶段）统一渲染为
+实际值，所以 **`PHP_MEMORY_LIMIT` 等配置对 CLI / drush 同样生效**，与 php-fpm
+一致。
 
 ### Nginx 403 errors
 Check web root permissions:

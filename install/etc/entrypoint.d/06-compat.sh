@@ -34,6 +34,8 @@
 #   PHP_UPLOAD_MAX_SIZE        → PHP_UPLOAD_MAX_FILE_SIZE + PHP_POST_MAX_SIZE
 #   MAX_FILE_UPLOAD_SIZE       → same two + nginx client_max_body_size (in 61-*)
 #   TIMEZONE                   → PHP_DATE_TIMEZONE + /etc/localtime
+#   (generic) every remaining ${VAR} in the php.ini is rendered from the
+#   container-start env, so PHP CLI / drush see runtime -e overrides too
 
 POOL_CONF="/usr/local/etc/php-fpm.d/docker-php-serversideup-pool.conf"
 PHP_INI="/usr/local/etc/php/conf.d/serversideup-docker-php.ini"
@@ -87,6 +89,25 @@ fi
 if [ -n "$TIMEZONE" ] && [ -f "/usr/share/zoneinfo/$TIMEZONE" ]; then
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
     echo "$TIMEZONE" > /etc/timezone 2>/dev/null || true
+fi
+
+# --- Generic php.ini ${VAR} render (CLI visibility) ---
+# php-fpm expands ${VAR} placeholders natively from its service environment,
+# but PHP CLI processes (drush via docker exec / SSH / cron) only inherit the
+# image's baked ENV defaults — runtime `-e` overrides never reach them.
+# Replace every remaining ${VAR} placeholder with the container-start env
+# value so CLI behaves identically to FPM. Placeholders without a set value
+# are left untouched for PHP's own runtime expansion. Runs AFTER the legacy
+# translations above so e.g. PHP_UPLOAD_MAX_SIZE keeps winning over the
+# PHP_UPLOAD_MAX_FILE_SIZE ENV default.
+if [ -f "$PHP_INI" ]; then
+    for var in $(grep -o '\${[A-Z_][A-Z0-9_]*}' "$PHP_INI" | sort -u | tr -d '${}'); do
+        eval "val=\${$var-}"
+        if [ -n "$val" ]; then
+            esc=$(printf '%s' "$val" | sed 's/[&|]/\\&/g')
+            sed -i "s|\${$var}|${esc}|g" "$PHP_INI"
+        fi
+    done
 fi
 
 # --- Harderning: expose_php = Off (last ini directive wins) ---
