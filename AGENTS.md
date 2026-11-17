@@ -202,7 +202,9 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
   install/authorize/rebuild/update 四个维护入口进 PHP-FPM，其余 `*.php` 一律 404
   （含 PATH_INFO 变体）。新增自定义 PHP 入口必须在该 server 的
   `vhost.d/pre-*.conf` 里显式加 location + `include /etc/nginx/fastcgi-drupal.conf;`。
-  `DRUPAL_DENY_PHP=true` 只是再砍掉四个维护入口。
+  `DRUPAL_DENY_PHP=true` 只是再砍掉四个维护入口。子目录站点的
+  `/<subdir>/core/modules/statistics/statistics.php` 由 default.conf 内部重写到根路径后
+  命中白名单；子目录下的 install/update 等仍然 404。
 - **PHP_CLI 的 opcache**：`PHP_OPCACHE_ENABLE=1` 同时开 cli opcache（上游行为），无实际影响
 - **JIT 保持关闭**：`PHP_OPCACHE_JIT=off` + `BUFFER_SIZE=0`（Alpine/musl 上 Drupal 会 SIGSEGV）
 

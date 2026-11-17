@@ -191,8 +191,9 @@ environment:
 - `TIMEOUT` 会改写共享的 `/etc/nginx/fastcgi-drupal.conf`（所有 PHP 入口共用同一份 fastcgi 参数）。
 - `/etc/nginx/vhost.d/pre-00-deny-php.conf` 是镜像**保留文件名**，请勿在该路径挂载自定义文件；
   若 vhost.d 以只读方式整体挂载，启用/关闭失败时只打印 WARN，不会中断启动。
-- `DRUPAL_SUBDIR(S)` 场景下站点主体不受影响，但 `statistics.php` 的 URL 带子目录前缀，
-  不在精确白名单内（会 404）。
+- `DRUPAL_SUBDIR(S)` 场景下站点主体不受影响；`/site1/core/modules/statistics/statistics.php`
+  会被内部重写到根路径并命中白名单（正常返回），而 `/site1/core/install.php`、
+  `/site1/update.php` 等维护入口仍然 404（两种模式一致）。
 
 Drupal 侧的 `settings.platform.php` 已有同名环境变量约定，建议两边取值保持一致。
 
@@ -271,6 +272,21 @@ nginx 在 location 匹配前会做 URL 解码、合并重复斜杠、去掉 `.`/
 Drupal 的 `try_files ... /index.php?$query_string` 是**内部重定向**，会重新匹配到 ①；
 但 `$request_uri` 仍是用户最初的 URL（如 `/node/1`），所以 ① 里的 `if` 不会触发 307——
 只有用户**直接**请求 `/index.php` 时才跳转。
+
+#### 子目录站点（`DRUPAL_SUBDIR` / `DRUPAL_SUBDIRS`）
+
+子目录只是 URL 前缀，代码仍在根目录。白名单中的 statistics 通过一条静态映射重写到
+根路径，再命中精确白名单，不依赖具体的子目录名：
+
+```nginx
+location ~* ^/[^/]+/(core/modules/statistics/statistics\.php)$ {
+    rewrite ^/[^/]+/(.*)$ /$1 last;
+}
+```
+
+因此 `/site1/core/modules/statistics/statistics.php` 正常可用；install/update/authorize/
+rebuild 等维护入口在子目录下不做映射，仍按兜底规则 404。站点页面、登录、静态资源由
+`extra/subdir.conf` 内部转发到 `/index.php`，不受影响。
 
 #### 新增自定义 PHP 入口
 
