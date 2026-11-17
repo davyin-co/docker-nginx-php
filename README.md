@@ -94,6 +94,7 @@ services:
 | `DRUPAL_SUBDIR` | Single subdirectory path | (empty) |
 | `DRUPAL_SUBDIRS` | Multiple subdirectories (comma-separated) | (empty) |
 | `DRUPAL_FILES_PERM_FIXED` | Fix Drupal files permissions on startup | `FALSE` |
+| `DRUPAL_DENY_PHP` | 生产防护：在默认 PHP 白名单基础上再禁用 install/authorize/rebuild/update 等维护入口（见下文说明） | (empty) |
 | `DRUSH_SQL_EXTRA` | 注入 `drush sql:cli/connect/query/dump` 的客户端选项（`--skip-ssl` 为 MariaDB 11+ 客户端兼容，**PostgreSQL 站点须置空**，psql 不认识该选项） | `--skip-ssl` |
 
 ### PHP Configuration
@@ -159,6 +160,132 @@ php.ini 中的 `${VAR}` 占位符在容器启动时统一渲染为实际 env 值
 | `HTTP_HEADER_X_CONTENT_SECURITY_POLICY_ENABLE` | Enable CSP header | `FALSE` |
 | `HTTP_HEADER_X_CONTENT_SECURITY_POLICY` | CSP policy value | `default-src 'self';` |
 
+### PHP Direct-Access Allowlist（默认启用）
+
+PHP 执行采用**白名单模型**，任何模式下都只放行明确的入口文件，其余 PHP 直连一律 404
+（覆盖 `//`、`./`、`%2e`、`%2f`、大小写、PATH_INFO 等变体）：
+
+| 模式 | 可执行的 PHP |
+|------|--------------|
+| 默认（`DRUPAL_DENY_PHP` 未设置或为 false） | `/index.php`、`/update.php`、`/core/install.php`、`/core/authorize.php`、`/core/rebuild.php`、`/core/modules/statistics/statistics.php` |
+| `DRUPAL_DENY_PHP=true` | 仅 `/index.php` 与 `/core/modules/statistics/statistics.php` |
+
+`DRUPAL_DENY_PHP` 只有设为 `true` / `1` / `yes` / `on`（大小写不敏感）才生效：容器启动时
+把镜像内置的 `/etc/nginx/vhost.d/pre-00-deny-php.conf.disabled` 复制为
+`/etc/nginx/vhost.d/pre-00-deny-php.conf`，由 `default.conf` 中已有的
+`include /etc/nginx/vhost.d/pre-*.conf;` 自动带入。未设置或为其他值时启动脚本会删除该文件，
+维护入口（install/authorize/rebuild/update）保持可用。
+
+```yaml
+environment:
+  - DRUPAL_DENY_PHP=true   # 仅生产环境设置
+```
+
+注意：
+
+- **这是相对旧版本的默认行为变化**：以前任意 `.php` 都可达，现在默认只放行上表入口；
+  `adminer.php`、自定义 `cron.php` 等会被 404。需要自定义入口时，在
+  `/etc/nginx/vhost.d/pre-10-custom.conf` 中显式添加 `location` 并
+  `include /etc/nginx/fastcgi-drupal.conf;`（pre-*.conf 在兜底拒绝之前 include，可以覆盖）。
+- 未安装的站点依赖 `/core/install.php`，开发/测试环境请不要设置 `DRUPAL_DENY_PHP=true`。
+- `TIMEOUT` 会改写共享的 `/etc/nginx/fastcgi-drupal.conf`（所有 PHP 入口共用同一份 fastcgi 参数）。
+- `/etc/nginx/vhost.d/pre-00-deny-php.conf` 是镜像**保留文件名**，请勿在该路径挂载自定义文件；
+  若 vhost.d 以只读方式整体挂载，启用/关闭失败时只打印 WARN，不会中断启动。
+- `DRUPAL_SUBDIR(S)` 场景下站点主体不受影响，但 `statistics.php` 的 URL 带子目录前缀，
+  不在精确白名单内（会 404）。
+
+Drupal 侧的 `settings.platform.php` 已有同名环境变量约定，建议两边取值保持一致。
+
+### PHP 规则详解（nginx location 匹配）
+
+本节解释上表背后的 nginx 匹配机制，便于排查"某个入口为什么 404/为什么能访问"。
+
+#### 匹配顺序
+
+1. **精确匹配（`=`）最先**：URI 完全相等直接命中，后续正则不再检查；
+2. 没有精确命中时，按**配置文本顺序**依次匹配正则 location，**第一条命中即停止**；
+3. 正则都不命中，才落到前缀 location（如 `location /` 的 `try_files`）。
+
+`include /etc/nginx/vhost.d/pre-*.conf;` 位于 default.conf 的 server 块顶部，
+因此 `pre-00-deny-php.conf` 里的正则**排在 default.conf 所有正则之前**——这是生产禁用
+规则能优先于维护入口放行规则的原因。
+
+#### default.conf 中的四类规则
+
+```nginx
+# ① 精确放行：Drupal 前端控制器（直接请求 /index.php 时仍 307）
+location = /index.php {
+    if ($request_uri ~* "^(.*/)index\.php(.*)") { return 307 $1$2; }
+    include /etc/nginx/fastcgi-drupal.conf;
+}
+
+# ② 正则放行：维护入口（默认可用，生产可关闭）
+location ~* ^/(?:core/(?:install|authorize|rebuild)|update)\.php(?:/|$) {
+    include /etc/nginx/fastcgi-drupal.conf;
+}
+
+# ③ 精确放行：业务白名单
+location = /core/modules/statistics/statistics.php {
+    include /etc/nginx/fastcgi-drupal.conf;
+}
+
+# ④ 兜底拒绝：其余所有 PHP（含 PATH_INFO 变体）
+location ~* \.php(?:/|$) {
+    return 404;
+}
+```
+
+- ①③ 是 `=`，优先级最高，不会被 ④ 抢走；
+- ② 使用 `~*`（大小写不敏感），`(?:/|$)` 同时覆盖 `/core/install.php/x` 这类 PATH_INFO；
+- ④ 同样带 `(?:/|$)`，因此 `.php` 结尾和 `.php/xxx` 都会被拒；
+- **只有上述 location 会 `include /etc/nginx/fastcgi-drupal.conf`**，即只有它们能把请求
+  送到 `127.0.0.1:9000`；不存在"任意 `.php` 都进 FPM"的通用 location。
+
+#### `DRUPAL_DENY_PHP=true` 的作用
+
+启动时把 `pre-00-deny-php.conf.disabled` 复制为 `pre-00-deny-php.conf`，片段内容只有两条：
+
+```nginx
+location ~* ^/core/(?:install|authorize|rebuild)\.php(?:/|$) { return 404; }
+location ~* ^/update\.php(?:/|$) { return 404; }
+```
+
+它通过第 30 行的 include 进入 server 块，先于 ② 命中，因此 install/authorize/rebuild/update
+变为 404；①③ 是精确匹配，仍然有效。开关关闭时脚本删除该文件，② 恢复生效。
+
+#### 为什么能挡住绕过写法
+
+nginx 在 location 匹配前会做 URL 解码、合并重复斜杠、去掉 `.`/`..` 段：
+
+| 请求 | nginx 内部 URI |
+|---|---|
+| `/core//install.php` | `/core/install.php`（`merge_slashes`） |
+| `/core/./install.php` | `/core/install.php`（dot 段） |
+| `/core/%2e/install.php` | `/core/install.php`（解码后归一化） |
+| `/core%2finstall.php` | `/core/install.php` |
+| `/%63ore/install.php` | `/core/install.php` |
+| `/CORE/INSTALL.PHP` | 原样，由 `~*` 大小写不敏感覆盖 |
+
+#### 内部转发与 307
+
+Drupal 的 `try_files ... /index.php?$query_string` 是**内部重定向**，会重新匹配到 ①；
+但 `$request_uri` 仍是用户最初的 URL（如 `/node/1`），所以 ① 里的 `if` 不会触发 307——
+只有用户**直接**请求 `/index.php` 时才跳转。
+
+#### 新增自定义 PHP 入口
+
+在 `/etc/nginx/vhost.d/pre-10-custom.conf` 中显式放行：
+
+```nginx
+location = /my-entry.php {
+    include /etc/nginx/fastcgi-drupal.conf;
+}
+```
+
+该文件同样在 default.conf 第 30 行被 include，早于 ④ 的兜底拒绝，因此可以覆盖；
+未显式放行的 PHP 仍然 404。注意 `pre-00` 片段的 deny 正则先于用户 `pre-10` 规则，
+所以无法用正则重新打开 install/update（如需临时放行，可使用精确 `=` location 覆盖）。
+
 ### SSH Server
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -222,6 +349,7 @@ RUN install-php-extensions mongodb
 ├── etc/
 │   ├── entrypoint.d/              # 初始化脚本（本镜像: *.sh）
 │   ├── nginx/
+│   │   ├── fastcgi-drupal.conf    # 共享 fastcgi 参数（TIMEOUT 在此渲染）
 │   │   ├── conf.d/default.conf    # Drupal server block（本镜像自带）
 │   │   ├── conf.d/drupal-maps.conf# Boost map 指令（http context）
 │   │   ├── extra/subdir.conf      # DRUPAL_SUBDIR(S) 运行时生成

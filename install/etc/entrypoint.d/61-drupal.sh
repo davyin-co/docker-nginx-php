@@ -13,6 +13,7 @@
 #   HTTP_HEADER_X_CONTENT_SECURITY_POLICY(+_ENABLE)  CSP header
 #   DRUPAL_SUBDIR / DRUPAL_SUBDIRS           extra location blocks
 #   DRUPAL_FILES_PERM_FIXED                  fix sites/default/files perms
+#   DRUPAL_DENY_PHP                          opt-in: deny maintenance PHP entrypoints
 #   TIMEOUT                                  nginx/fastcgi timeouts
 #   NGINX_LOG_ACCESS_PATH / NGINX_LOG_ERROR_PATH / NGINX_LOG_BLOCKED_PATH
 #                                            legacy log directory vars
@@ -95,9 +96,45 @@ EOF
     IFS="$OLD_IFS"
 fi
 
+# --- Maintenance PHP entrypoint deny (opt-in production hardening) ---
+# conf.d/default.conf is allowlist-based in every mode (only /index.php,
+# statistics.php and the maintenance entrypoints reach PHP-FPM). This
+# fragment additionally removes install/authorize/rebuild/update in
+# production. It ships as pre-00-deny-php.conf.disabled, which does not
+# match `include /etc/nginx/vhost.d/pre-*.conf;`; only a truthy
+# DRUPAL_DENY_PHP activates it. Idempotent: re-copied on every start, and
+# removed again when the switch is off.
+PHP_DENY_SRC="/etc/nginx/vhost.d/pre-00-deny-php.conf.disabled"
+PHP_DENY_CONF="/etc/nginx/vhost.d/pre-00-deny-php.conf"
+
+case "$(printf '%s' "${DRUPAL_DENY_PHP:-}" | tr '[:upper:]' '[:lower:]')" in
+    true|1|yes|on)
+        if [ ! -f "$PHP_DENY_SRC" ]; then
+            echo "WARN: PHP direct-access deny: $PHP_DENY_SRC is missing (vhost.d overmounted?); rules NOT activated"
+        elif cp -f "$PHP_DENY_SRC" "$PHP_DENY_CONF" 2>/dev/null; then
+            echo "👉 (drupal): PHP direct-access deny: enabled (DRUPAL_DENY_PHP=$DRUPAL_DENY_PHP)"
+        else
+            echo "WARN: PHP direct-access deny: cannot write $PHP_DENY_CONF (read-only mount?); keeping current state"
+        fi
+        ;;
+    *)
+        if [ ! -e "$PHP_DENY_CONF" ]; then
+            echo "👉 (drupal): PHP direct-access deny: disabled (set DRUPAL_DENY_PHP=true in production to enable)"
+        elif rm -f "$PHP_DENY_CONF" 2>/dev/null; then
+            echo "👉 (drupal): PHP direct-access deny: disabled (DRUPAL_DENY_PHP is not truthy)"
+        else
+            echo "WARN: PHP direct-access deny: cannot remove $PHP_DENY_CONF (read-only mount?); stale rules may still apply"
+        fi
+        ;;
+esac
+
 # --- Timeouts ---
 if [ -n "$TIMEOUT" ]; then
-    sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" "$SITE_CONF"
+    # /etc/nginx/fastcgi-drupal.conf is the single source for fastcgi tuning
+    # (included by default.conf and, when enabled, the deny-php fragment).
+    # $SITE_CONF is still processed for compatibility with custom site configs.
+    sed -i "s/fastcgi_read_timeout 60;/fastcgi_read_timeout ${TIMEOUT};/g" \
+        "$SITE_CONF" /etc/nginx/fastcgi-drupal.conf
     # client_body_timeout / send_timeout are valid at http context
     cat > /etc/nginx/conf.d/zz-timeout.conf <<EOF
 client_body_timeout ${TIMEOUT};

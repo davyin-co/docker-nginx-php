@@ -1,0 +1,36 @@
+## Production hardening (opt-in): remove the dev-only maintenance entrypoints
+## from the PHP allowlist.
+##
+## conf.d/default.conf is already allowlist-based: only /index.php,
+## /core/modules/statistics/statistics.php and the maintenance entrypoints
+## (install/authorize/rebuild/update) may reach PHP-FPM; every other *.php
+## path is denied in every mode.
+##
+## This file ships with a `.disabled` suffix so it is NOT picked up by
+## `include /etc/nginx/vhost.d/pre-*.conf;`. /etc/entrypoint.d/61-drupal.sh
+## copies it to
+##   /etc/nginx/vhost.d/pre-00-deny-php.conf
+## only when DRUPAL_DENY_PHP is set to a truthy value. With the switch on,
+## install.php / authorize.php / rebuild.php / update.php are no longer
+## reachable; /index.php and statistics.php stay available.
+##
+## Placement matters: the pre-*.conf include sits at the top of the server
+## block, so these regex locations are evaluated before the allow regex in
+## conf.d/default.conf and win. The two exact-match (`=`) entrypoints always
+## win over regex locations regardless of order.
+##
+## nginx normalises `//`, `./`, `%2e`, `%2f` and dot segments before location
+## matching, so those variants hit the same rules.
+
+# Explicit (nginx default is already on; kept for clarity/self-documentation)
+merge_slashes on;
+
+# Core maintenance entrypoints (allowed in dev, denied in production).
+location ~* ^/core/(?:install|authorize|rebuild)\.php(?:/|$) {
+    return 404;
+}
+
+# Database update entrypoint (same treatment).
+location ~* ^/update\.php(?:/|$) {
+    return 404;
+}

@@ -71,7 +71,11 @@ docker build -f Dockerfile.debian.template \
     位置运行时探测：新 base 用 `/etc/s6-overlay/user-bundles.d/user/contents.d/`，旧 base 用
     `/etc/s6-overlay/s6-rc.d/user/contents.d/`——**两处都定义会冲突**，同名 "user" bundle
     互相覆盖导致上游 nginx/php-fpm 从编译结果中丢失（2026-10 实测）
-  - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径）
+  - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径），
+    以及 `DRUPAL_DENY_PHP` 开关：真值时把
+    `vhost.d/pre-00-deny-php.conf.disabled` 复制为 `.conf`（片段只拒绝
+    install/authorize/rebuild/update 四个维护入口；PHP 白名单模型本身在
+    default.conf 里，与开关无关），否则删除该文件；幂等，写失败只 WARN
   - `62-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/custom`）
   - `63-sshd.sh` — SSH 用户/密钥/host key + sudo 授权（`/etc/sudoers.d/90-$USER_NAME`，NOPASSWD）；`USER_NAME` 为空时 `rm contents.d/sshd` 禁用服务
   - `65-logrotate.sh` — 渲染 `/etc/logrotate.d/custom`
@@ -86,7 +90,11 @@ docker build -f Dockerfile.debian.template \
 - `install/etc/nginx/conf.d/default.conf` → Drupal server block
 - `install/etc/nginx/conf.d/drupal-maps.conf` → Boost map（http context，conf.d 在 http 级 include）
 - `install/etc/nginx/extra/subdir.conf` → DRUPAL_SUBDIR(S) 运行时生成位置
-- `install/etc/nginx/vhost.d/` → 用户自定义 pre-/post-*.conf 扩展点
+- `install/etc/nginx/fastcgi-drupal.conf` → 共享 fastcgi 参数（`default.conf` 通用 PHP
+  location 与 deny 片段共用；`TIMEOUT` 在此渲染）
+- `install/etc/nginx/vhost.d/` → 用户自定义 pre-/post-*.conf 扩展点；
+  `pre-00-deny-php.conf.disabled` 为 `DRUPAL_DENY_PHP` 的规则源（后缀故意不匹配
+  `pre-*.conf`，默认不生效）
 - `install/etc/s6-overlay/s6-rc.d/` → 自有服务定义 + user/contents.d 注册
 - `install/etc/ssh/sshd_config.d/00-custom.conf` → SSH 配置（Port 2222 等）
 - `install/etc/profile.d/pathenv.sh` → 登录 shell 的 PATH + PS1（红 user/青 cwd 双行提示符）
@@ -190,6 +198,11 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
   配置（PHP_MEMORY_LIMIT、时区、上传限制等）；未设置的占位符仍由 PHP 运行时自行展开。
   代价：`docker exec -e VAR=val` 的单进程覆盖对已渲染进 ini 的值不再生效（值在容器启动时固化，
   与 FPM 一致）；需要临时改 CLI 配置时用 `php -d memory_limit=...`
+- **PHP 执行是白名单**：default.conf 只让 `/index.php`、`statistics.php` 和
+  install/authorize/rebuild/update 四个维护入口进 PHP-FPM，其余 `*.php` 一律 404
+  （含 PATH_INFO 变体）。新增自定义 PHP 入口必须在该 server 的
+  `vhost.d/pre-*.conf` 里显式加 location + `include /etc/nginx/fastcgi-drupal.conf;`。
+  `DRUPAL_DENY_PHP=true` 只是再砍掉四个维护入口。
 - **PHP_CLI 的 opcache**：`PHP_OPCACHE_ENABLE=1` 同时开 cli opcache（上游行为），无实际影响
 - **JIT 保持关闭**：`PHP_OPCACHE_JIT=off` + `BUFFER_SIZE=0`（Alpine/musl 上 Drupal 会 SIGSEGV）
 
