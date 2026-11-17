@@ -29,7 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        array:
+        # 版本表只在此处定义，merge job 用 YAML alias 引用（Actions 自 2025-08 支持 anchor/alias）
+        array: &versions
           [
             {
               php_version: "8.2",
@@ -95,13 +96,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        array:
-          [
-            { tag: "8.2-debian" },
-            { tag: "8.3-debian" },
-            { tag: "8.4-debian" },
-            { tag: "8.5-debian" }
-          ]
+        # 直接复用 build 的版本表，避免加 PHP 版本时两处不同步（漏改会静默不合成正式 tag）
+        array: *versions
 
     steps:
       - name: Login to Docker Hub
