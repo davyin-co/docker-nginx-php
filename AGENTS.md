@@ -72,10 +72,13 @@ docker build -f Dockerfile.debian.template \
     `/etc/s6-overlay/s6-rc.d/user/contents.d/`——**两处都定义会冲突**，同名 "user" bundle
     互相覆盖导致上游 nginx/php-fpm 从编译结果中丢失（2026-10 实测）
   - `61-drupal.sh` — 站点配置（端口/webroot/安全头/subdir/超时/legacy 日志路径），
-    以及 `DRUPAL_DENY_PHP` 开关：真值时把
-    `vhost.d/pre-00-deny-php.conf.disabled` 复制为 `.conf`（片段只拒绝
-    install/authorize/rebuild/update 四个维护入口；PHP 白名单模型本身在
-    default.conf 里，与开关无关），否则删除该文件；幂等，写失败只 WARN
+    以及 `DRUPAL_DENY_PHP` 开关：**默认（未设置/空/真值）即把
+    `vhost.d/pre-00-deny-php.conf.disabled` 复制为 `.conf`**，拒绝
+    install/authorize/rebuild/update 四个维护入口（片段只含这四条；PHP 白名单
+    模型本身在 default.conf 里，与开关无关）；仅当显式设为
+    `false`/`0`/`no`/`off`（开发环境）时删除该文件放行。语义 2026-11-20 反转
+    （原 opt-in `true` 启用，因生产重建丢变量导致 install.php 重新暴露而改为
+    默认禁用）；幂等，写失败只 WARN
   - `62-cron.sh` — 渲染 crontab（Alpine `/etc/crontabs/root`；Debian `/etc/cron.d/custom`）
   - `63-sshd.sh` — SSH 用户/密钥/host key + sudo 授权（`/etc/sudoers.d/90-$USER_NAME`，NOPASSWD）；`USER_NAME` 为空时 `rm contents.d/sshd` 禁用服务
   - `65-logrotate.sh` — 渲染 `/etc/logrotate.d/custom`
@@ -202,7 +205,7 @@ CI 构建成功 ≠ 镜像可运行（构建只验证 Dockerfile 能跑通，不
   install/authorize/rebuild/update 四个维护入口进 PHP-FPM，其余 `*.php` 一律 404
   （含 PATH_INFO 变体）。新增自定义 PHP 入口必须在该 server 的
   `vhost.d/pre-*.conf` 里显式加 location + `include /etc/nginx/fastcgi-drupal.conf;`。
-  `DRUPAL_DENY_PHP=true` 只是再砍掉四个维护入口。子目录站点的
+  `DRUPAL_DENY_PHP` 默认即禁用四个维护入口（显式 `false` 才放行）。子目录站点的
   `/<subdir>/core/modules/statistics/statistics.php` 由 default.conf 内部重写到根路径后
   命中白名单；子目录下的 install/update 等仍然 404。
 - **PHP_CLI 的 opcache**：`PHP_OPCACHE_ENABLE=1` 同时开 cli opcache（上游行为），无实际影响

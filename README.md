@@ -94,7 +94,7 @@ services:
 | `DRUPAL_SUBDIR` | Single subdirectory path | (empty) |
 | `DRUPAL_SUBDIRS` | Multiple subdirectories (comma-separated) | (empty) |
 | `DRUPAL_FILES_PERM_FIXED` | Fix Drupal files permissions on startup | `FALSE` |
-| `DRUPAL_DENY_PHP` | 生产防护：在默认 PHP 白名单基础上再禁用 install/authorize/rebuild/update 等维护入口（见下文说明） | (empty) |
+| `DRUPAL_DENY_PHP` | 生产防护：默认（未设置）即禁用 install/authorize/rebuild/update 等维护入口；设为 `false`/`0`/`no`/`off` 才放行（开发用）。2026-11-20 起语义反转，原为 opt-in `true` 启用 | (empty) = 禁用 |
 | `DRUSH_SQL_EXTRA` | 注入 `drush sql:cli/connect/query/dump` 的客户端选项（`--skip-ssl` 为 MariaDB 11+ 客户端兼容，**PostgreSQL 站点须置空**，psql 不认识该选项） | `--skip-ssl` |
 
 ### PHP Configuration
@@ -167,18 +167,23 @@ PHP 执行采用**白名单模型**，任何模式下都只放行明确的入口
 
 | 模式 | 可执行的 PHP |
 |------|--------------|
-| 默认（`DRUPAL_DENY_PHP` 未设置或为 false） | `/index.php`、`/update.php`、`/core/install.php`、`/core/authorize.php`、`/core/rebuild.php`、`/core/modules/statistics/statistics.php` |
-| `DRUPAL_DENY_PHP=true` | 仅 `/index.php` 与 `/core/modules/statistics/statistics.php` |
+| 默认（`DRUPAL_DENY_PHP` 未设置，2026-11-20 起） | 仅 `/index.php` 与 `/core/modules/statistics/statistics.php` |
+| `DRUPAL_DENY_PHP=false` / `0` / `no` / `off`（开发环境显式放行） | `/index.php`、`/update.php`、`/core/install.php`、`/core/authorize.php`、`/core/rebuild.php`、`/core/modules/statistics/statistics.php` |
 
-`DRUPAL_DENY_PHP` 只有设为 `true` / `1` / `yes` / `on`（大小写不敏感）才生效：容器启动时
-把镜像内置的 `/etc/nginx/vhost.d/pre-00-deny-php.conf.disabled` 复制为
+**默认即禁用维护入口**（生产安全默认值）：容器启动时把镜像内置的
+`/etc/nginx/vhost.d/pre-00-deny-php.conf.disabled` 复制为
 `/etc/nginx/vhost.d/pre-00-deny-php.conf`，由 `default.conf` 中已有的
-`include /etc/nginx/vhost.d/pre-*.conf;` 自动带入。未设置或为其他值时启动脚本会删除该文件，
-维护入口（install/authorize/rebuild/update）保持可用。
+`include /etc/nginx/vhost.d/pre-*.conf;` 自动带入。只有显式把 `DRUPAL_DENY_PHP`
+设为 `false` / `0` / `no` / `off`（大小写不敏感）时启动脚本才会删除该文件、
+放行 install/authorize/rebuild/update。
+
+> ⚠️ **行为变更（2026-11-20）**：此前默认放行维护入口、靠 `DRUPAL_DENY_PHP=true`
+> 禁用；发生过生产容器重建时丢失该变量导致 `/core/install.php` 重新暴露的事故，
+> 因此语义反转为默认禁用。升级后如需维护入口，必须显式设 `DRUPAL_DENY_PHP=false`。
 
 ```yaml
 environment:
-  - DRUPAL_DENY_PHP=true   # 仅生产环境设置
+  - DRUPAL_DENY_PHP=false   # 仅开发/未安装站点需要；生产请勿设置
 ```
 
 注意：
@@ -187,7 +192,8 @@ environment:
   `adminer.php`、自定义 `cron.php` 等会被 404。需要自定义入口时，在
   `/etc/nginx/vhost.d/pre-10-custom.conf` 中显式添加 `location` 并
   `include /etc/nginx/fastcgi-drupal.conf;`（pre-*.conf 在兜底拒绝之前 include，可以覆盖）。
-- 未安装的站点依赖 `/core/install.php`，开发/测试环境请不要设置 `DRUPAL_DENY_PHP=true`。
+- 未安装/维护中的站点依赖 `/core/install.php` 与 `/update.php`，开发/测试环境请显式设置
+  `DRUPAL_DENY_PHP=false` 放行；生产环境不要设置该变量（默认即拒绝）。
 - `TIMEOUT` 会改写共享的 `/etc/nginx/fastcgi-drupal.conf`（所有 PHP 入口共用同一份 fastcgi 参数）。
 - `/etc/nginx/vhost.d/pre-00-deny-php.conf` 是镜像**保留文件名**，请勿在该路径挂载自定义文件；
   若 vhost.d 以只读方式整体挂载，启用/关闭失败时只打印 WARN，不会中断启动。
@@ -242,9 +248,10 @@ location ~* \.php(?:/|$) {
 - **只有上述 location 会 `include /etc/nginx/fastcgi-drupal.conf`**，即只有它们能把请求
   送到 `127.0.0.1:9000`；不存在"任意 `.php` 都进 FPM"的通用 location。
 
-#### `DRUPAL_DENY_PHP=true` 的作用
+#### `DRUPAL_DENY_PHP` 的作用（默认启用，显式 `false` 关闭）
 
-启动时把 `pre-00-deny-php.conf.disabled` 复制为 `pre-00-deny-php.conf`，片段内容只有两条：
+启动时把 `pre-00-deny-php.conf.disabled` 复制为 `pre-00-deny-php.conf`（除非
+`DRUPAL_DENY_PHP=false`/`0`/`no`/`off` 显式关闭），片段内容只有两条：
 
 ```nginx
 location ~* ^/core/(?:install|authorize|rebuild)\.php(?:/|$) { return 404; }
@@ -252,7 +259,7 @@ location ~* ^/update\.php(?:/|$) { return 404; }
 ```
 
 它通过第 30 行的 include 进入 server 块，先于 ② 命中，因此 install/authorize/rebuild/update
-变为 404；①③ 是精确匹配，仍然有效。开关关闭时脚本删除该文件，② 恢复生效。
+变为 404；①③ 是精确匹配，仍然有效。显式 opt-out（`DRUPAL_DENY_PHP=false`）时脚本删除该文件，② 恢复生效。
 
 #### 为什么能挡住绕过写法
 

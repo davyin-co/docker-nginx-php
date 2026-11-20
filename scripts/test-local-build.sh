@@ -17,7 +17,11 @@
 #
 # The test copies a fresh Drupal codebase out of the official drupal image,
 # mounts it into the freshly built image and verifies that nginx + php-fpm
-# serve Drupal's installer page (HTTP 200 on /core/install.php).
+# serve Drupal's installer page (HTTP 200 on /core/install.php). The test
+# container sets DRUPAL_DENY_PHP=false because an uninstalled site needs
+# the maintenance entrypoints (the image default denies them since
+# 2026-11-20). A second container WITHOUT that variable must then deny
+# /core/install.php and /update.php (404) — the production default.
 #
 set -euo pipefail
 
@@ -105,6 +109,7 @@ docker run -d --name "$NAME" \
     --platform "$PLATFORM" \
     -p "${PORT}:80" \
     -e DRUPAL_WEB_ROOT=web \
+    -e DRUPAL_DENY_PHP=false \
     -v "$TMPDIR/html:/var/www/html" \
     "$TAG" >/dev/null
 
@@ -123,6 +128,41 @@ if [ -n "$ok" ]; then
     echo "PASS: ${TAG} serves Drupal installer (HTTP 200)"
 else
     echo "FAIL: ${TAG} did not serve ${url}" >&2
+    echo "---- last container logs ----" >&2
+    docker logs "$NAME" 2>&1 | tail -50 >&2 || true
+    exit 1
+fi
+
+# --- Production-default check: without DRUPAL_DENY_PHP, maintenance ---
+# --- entrypoints must be denied (404) since 2026-11-20.             ---
+echo "==> [5b/5] Verifying default-deny of maintenance entrypoints"
+docker rm -f "$NAME" >/dev/null
+docker run -d --name "$NAME" \
+    --platform "$PLATFORM" \
+    -p "${PORT}:80" \
+    -e DRUPAL_WEB_ROOT=web \
+    -v "$TMPDIR/html:/var/www/html" \
+    "$TAG" >/dev/null
+
+deny_ok=""
+for _ in $(seq 1 60); do
+    code_install="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${PORT}/core/install.php" 2>/dev/null || true)"
+    code_update="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${PORT}/update.php" 2>/dev/null || true)"
+    if [ "$code_install" = "404" ] && [ "$code_update" = "404" ]; then
+        deny_ok=1
+        break
+    fi
+    if [ "$code_install" != "000" ] && [ "$code_install" != "404" ]; then
+        # nginx is up but not denying — fail fast
+        break
+    fi
+    sleep 2
+done
+
+if [ -n "$deny_ok" ]; then
+    echo "PASS: default mode denies /core/install.php and /update.php (404)"
+else
+    echo "FAIL: default mode should deny maintenance entrypoints (got install=${code_install} update=${code_update})" >&2
     echo "---- last container logs ----" >&2
     docker logs "$NAME" 2>&1 | tail -50 >&2 || true
     exit 1

@@ -13,7 +13,9 @@
 #   HTTP_HEADER_X_CONTENT_SECURITY_POLICY(+_ENABLE)  CSP header
 #   DRUPAL_SUBDIR / DRUPAL_SUBDIRS           extra location blocks
 #   DRUPAL_FILES_PERM_FIXED                  fix sites/default/files perms
-#   DRUPAL_DENY_PHP                          opt-in: deny maintenance PHP entrypoints
+#   DRUPAL_DENY_PHP                          default-on deny of maintenance PHP
+#                                          entrypoints; set to false/0/no/off
+#                                          to allow them (dev)
 #   TIMEOUT                                  nginx/fastcgi timeouts
 #   NGINX_LOG_ACCESS_PATH / NGINX_LOG_ERROR_PATH / NGINX_LOG_BLOCKED_PATH
 #                                            legacy log directory vars
@@ -96,34 +98,38 @@ EOF
     IFS="$OLD_IFS"
 fi
 
-# --- Maintenance PHP entrypoint deny (opt-in production hardening) ---
+# --- Maintenance PHP entrypoint deny (DEFAULT-ON production hardening) ---
 # conf.d/default.conf is allowlist-based in every mode (only /index.php,
 # statistics.php and the maintenance entrypoints reach PHP-FPM). This
-# fragment additionally removes install/authorize/rebuild/update in
-# production. It ships as pre-00-deny-php.conf.disabled, which does not
-# match `include /etc/nginx/vhost.d/pre-*.conf;`; only a truthy
-# DRUPAL_DENY_PHP activates it. Idempotent: re-copied on every start, and
-# removed again when the switch is off.
+# fragment additionally removes install/authorize/rebuild/update. It ships
+# as pre-00-deny-php.conf.disabled, which does not match
+# `include /etc/nginx/vhost.d/pre-*.conf;`.
+#
+# Semantics (flipped 2026-11-20 after a prod incident where a redeployed
+# container lost the opt-in var and silently re-exposed install.php):
+#   - unset / empty / truthy (true|1|yes|on): DENY (safe default)
+#   - explicit falsy (false|0|no|off): allow maintenance entrypoints (dev)
+# Idempotent: re-copied on every start, removed again on explicit opt-out.
 PHP_DENY_SRC="/etc/nginx/vhost.d/pre-00-deny-php.conf.disabled"
 PHP_DENY_CONF="/etc/nginx/vhost.d/pre-00-deny-php.conf"
 
 case "$(printf '%s' "${DRUPAL_DENY_PHP:-}" | tr '[:upper:]' '[:lower:]')" in
-    true|1|yes|on)
-        if [ ! -f "$PHP_DENY_SRC" ]; then
-            echo "WARN: PHP direct-access deny: $PHP_DENY_SRC is missing (vhost.d overmounted?); rules NOT activated"
-        elif cp -f "$PHP_DENY_SRC" "$PHP_DENY_CONF" 2>/dev/null; then
-            echo "👉 (drupal): PHP direct-access deny: enabled (DRUPAL_DENY_PHP=$DRUPAL_DENY_PHP)"
+    false|0|no|off)
+        if [ ! -e "$PHP_DENY_CONF" ]; then
+            echo "👉 (drupal): PHP direct-access deny: disabled (DRUPAL_DENY_PHP=$DRUPAL_DENY_PHP, maintenance entrypoints reachable)"
+        elif rm -f "$PHP_DENY_CONF" 2>/dev/null; then
+            echo "👉 (drupal): PHP direct-access deny: disabled (DRUPAL_DENY_PHP=$DRUPAL_DENY_PHP, maintenance entrypoints reachable)"
         else
-            echo "WARN: PHP direct-access deny: cannot write $PHP_DENY_CONF (read-only mount?); keeping current state"
+            echo "WARN: PHP direct-access deny: cannot remove $PHP_DENY_CONF (read-only mount?); stale deny rules may still apply"
         fi
         ;;
     *)
-        if [ ! -e "$PHP_DENY_CONF" ]; then
-            echo "👉 (drupal): PHP direct-access deny: disabled (set DRUPAL_DENY_PHP=true in production to enable)"
-        elif rm -f "$PHP_DENY_CONF" 2>/dev/null; then
-            echo "👉 (drupal): PHP direct-access deny: disabled (DRUPAL_DENY_PHP is not truthy)"
+        if [ ! -f "$PHP_DENY_SRC" ]; then
+            echo "WARN: PHP direct-access deny: $PHP_DENY_SRC is missing (vhost.d overmounted?); maintenance entrypoints NOT denied"
+        elif cp -f "$PHP_DENY_SRC" "$PHP_DENY_CONF" 2>/dev/null; then
+            echo "👉 (drupal): PHP direct-access deny: enabled (default; set DRUPAL_DENY_PHP=false to allow maintenance entrypoints in dev)"
         else
-            echo "WARN: PHP direct-access deny: cannot remove $PHP_DENY_CONF (read-only mount?); stale rules may still apply"
+            echo "WARN: PHP direct-access deny: cannot write $PHP_DENY_CONF (read-only mount?); keeping current state"
         fi
         ;;
 esac

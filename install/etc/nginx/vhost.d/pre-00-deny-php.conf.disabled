@@ -10,9 +10,11 @@
 ## `include /etc/nginx/vhost.d/pre-*.conf;`. /etc/entrypoint.d/61-drupal.sh
 ## copies it to
 ##   /etc/nginx/vhost.d/pre-00-deny-php.conf
-## only when DRUPAL_DENY_PHP is set to a truthy value. With the switch on,
-## install.php / authorize.php / rebuild.php / update.php are no longer
-## reachable; /index.php and statistics.php stay available.
+## by DEFAULT (production-safe): install.php / authorize.php / rebuild.php /
+## update.php are denied unless DRUPAL_DENY_PHP is explicitly set to a falsy
+## value (false/0/no/off), which removes the file again for development
+## sites that still need /core/install.php. With the deny active,
+## /index.php and statistics.php stay available.
 ##
 ## Placement matters: the pre-*.conf include sits at the top of the server
 ## block, so these regex locations are evaluated before the allow regex in
